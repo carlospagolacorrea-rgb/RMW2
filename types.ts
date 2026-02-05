@@ -1,0 +1,40 @@
+
+export enum GameMode {
+  HOME = 'HOME',
+  DAILY = 'DAILY',
+  MULTIPLAYER_SETUP = 'MULTIPLAYER_SETUP',
+  MULTIPLAYER_GAME = 'MULTIPLAYER_GAME',
+  MULTIPLAYER_RESULTS = 'MULTIPLAYER_RESULTS',
+  DAILY_RANKING = 'DAILY_RANKING',
+  GLOBAL_RANKING = 'GLOBAL_RANKING'
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  word?: string;
+  score?: number;
+  totalScore: number;
+  comment?: string;
+}
+
+export interface ScoreCache {
+  [key: string]: {
+    score: number;
+    comment: string;
+  };
+}
+
+export interface DailyResult {
+  prompt: string;
+  response: string;
+  score: number;
+  timestamp: number;
+}
+
+export interface LeaderboardEntry {
+  nick: string;
+  prompt: string;
+  response: string;
+  score: number;
+}
