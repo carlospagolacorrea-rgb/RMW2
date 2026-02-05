@@ -3,8 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { GameMode, Player, ScoreCache, LeaderboardEntry } from './types';
 import { getDailyPrompts, getWordScore, generateCreativePrompt, getNextRotationTime } from './services/geminiService';
 import { getGlobalRankings, getDailyRankings, submitGameScore, RankingEntry } from './services/supabaseClient';
-import { toPng } from 'html-to-image';
-import { useRef } from 'react';
 
 // --- Retro UI Components ---
 
@@ -354,77 +352,43 @@ const useCountdown = () => {
 
 // --- Sub-components ---
 
-const ShareButton: React.FC<{
-  score: number,
-  word: string,
-  response: string,
-  cardRef: React.RefObject<HTMLDivElement>
-}> = ({ score, word, response, cardRef }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
+const ShareButton: React.FC<{ score: number, word: string, response: string }> = ({ score, word, response }) => {
+  const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
-    if (!cardRef.current || isProcessing) return;
-    setIsProcessing(true);
+    const text = `📟 RANK MY WORD\n\nPalabra: ${word.toUpperCase()}\nRespuesta: ${response.toUpperCase()}\nScore: ${score.toFixed(3)}/10\n\n¿Puedes superarme?`;
+    const url = window.location.origin;
 
-    try {
-      // Create text for fallback/caption
-      const text = `📟 RANK MY WORD\n\nPalabra: ${word.toUpperCase()}\nRespuesta: ${response.toUpperCase()}\nScore: ${score.toFixed(3)}/10\n\n¿Puedes superarme?`;
-      const url = window.location.origin;
-
-      // Capture card as PNG
-      const dataUrl = await toPng(cardRef.current, {
-        cacheBust: true,
-        backgroundColor: '#0a0a0a',
-        style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top left',
-          margin: '0',
-          padding: '20px'
-        }
-      });
-
-      // Convert dataUrl to Blob
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      const file = new File([blob], `rankmyword-score.png`, { type: 'image/png' });
-
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (navigator.share) {
+      try {
         await navigator.share({
-          files: [file],
           title: 'RankMyWord - Mi Puntuación',
           text: text,
+          url: url,
         });
-      } else {
-        // Fallback: Download image and copy text
-        const link = document.createElement('a');
-        link.download = `rankmyword-${word}.png`;
-        link.href = dataUrl;
-        link.click();
-
-        await navigator.clipboard.writeText(`${text}\n${url}`);
-        alert("¡Captura descargada y reporte copiado al portapapeles! Ya puedes subirlo a tus redes.");
+      } catch (err) {
+        console.log('Error compartiendo:', err);
       }
-    } catch (err) {
-      console.error('Error al capturar o compartir:', err);
-      // Fallback a texto si falla la imagen
-      const text = `📟 RANK MY WORD\n\nPalabra: ${word.toUpperCase()}\nRespuesta: ${response.toUpperCase()}\nScore: ${score.toFixed(3)}/10`;
-      navigator.clipboard.writeText(text);
-      alert("Error al generar imagen. Se ha copiado el texto del resultado.");
-    } finally {
-      setIsProcessing(false);
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Error al copiar:', err);
+      }
     }
   };
 
   return (
     <button
       onClick={handleShare}
-      disabled={isProcessing}
-      className={`retro-button py-2 px-6 flex items-center gap-2 transition-all duration-300 ${isProcessing ? 'opacity-50 cursor-wait' : ''}`}
+      className={`retro-button py-2 px-6 flex items-center gap-2 transition-all duration-300 ${copied ? 'bg-white text-black border-white' : ''}`}
     >
       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
         <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z" />
       </svg>
-      {isProcessing ? 'GENERANDO...' : 'COMPARTIR TARJETA'}
+      {copied ? '¡COPIADO!' : 'COMPARTIR RESULTADO'}
     </button>
   );
 };
@@ -436,53 +400,46 @@ const ResultDisplay: React.FC<{
   prompt: string,
   playerName?: string,
   totalScore?: number
-}> = ({ score, comment, userWord, prompt, playerName, totalScore }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
+}> = ({ score, comment, userWord, prompt, playerName, totalScore }) => (
+  <div className="w-full flex flex-col items-center gap-6 animate-drop">
+    <div className="flex flex-col items-center gap-1">
+      {playerName && <span className="font-['Bebas_Neue'] text-amber-500 tracking-widest text-xl opacity-70 uppercase">JUGADOR: {playerName}</span>}
+      <h4 className="font-['Bebas_Neue'] text-6xl md:text-8xl text-white tracking-widest uppercase mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] text-center px-4">
+        "{userWord}"
+      </h4>
+    </div>
 
-  return (
-    <div className="w-full flex flex-col items-center gap-6 animate-drop">
-      <div ref={cardRef} className="w-full flex flex-col items-center gap-6 p-4 bg-[#0a0a0a]">
-        <div className="text-center">
-          <WordBoard word={prompt} size="sm" />
-          {playerName && <span className="font-['Bebas_Neue'] text-amber-500 tracking-[0.4em] text-lg opacity-60 uppercase block mt-4">JUGADOR: {playerName}</span>}
-          <h4 className="font-['Bebas_Neue'] text-6xl md:text-8xl text-white tracking-widest uppercase mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] text-center px-4">
-            "{userWord}"
-          </h4>
+    <div className="w-full flex flex-col md:flex-row items-center gap-8 md:gap-12 py-10 px-6 md:px-12 bg-black/95 border-2 border-amber-500 shadow-[0_0_40px_rgba(255,188,71,0.15)] relative">
+      <div className="flex flex-col items-center gap-4 shrink-0">
+        <div className="w-44 h-44 md:w-60 md:h-60 border-4 border-amber-500 flex items-center justify-center bg-black relative shadow-[0_0_20px_rgba(255,188,71,0.3)] overflow-hidden">
+          <span className="text-4xl md:text-6xl font-bold tracking-tighter text-amber-500 drop-shadow-[0_0_12px_rgba(255,188,71,0.5)] whitespace-nowrap px-4">
+            {score.toFixed(3)}
+          </span>
         </div>
+        <span className="crt-text text-sm md:text-md tracking-[0.5em] opacity-80 font-bold uppercase">RONDA</span>
 
-        <div className="w-full flex flex-col md:flex-row items-center gap-8 md:gap-12 py-10 px-6 md:px-12 bg-black/95 border-2 border-amber-500 shadow-[0_0_40px_rgba(255,188,71,0.15)] relative">
-          <div className="flex flex-col items-center gap-4 shrink-0">
-            <div className="w-44 h-44 md:w-60 md:h-60 border-4 border-amber-500 flex items-center justify-center bg-black relative shadow-[0_0_20px_rgba(255,188,71,0.3)] overflow-hidden">
-              <span className="text-4xl md:text-6xl font-bold tracking-tighter text-amber-500 drop-shadow-[0_0_12px_rgba(255,188,71,0.5)] whitespace-nowrap px-4">
-                {score.toFixed(3)}
-              </span>
-            </div>
-            <span className="crt-text text-sm md:text-md tracking-[0.5em] opacity-80 font-bold uppercase">RONDA</span>
-
-            {totalScore !== undefined && (
-              <div className="mt-2 flex flex-col items-center">
-                <span className="font-['Bebas_Neue'] text-2xl text-white opacity-80">{totalScore.toFixed(3)}</span>
-                <span className="crt-text text-[10px] opacity-60 uppercase tracking-wider">ACUMULADO</span>
-              </div>
-            )}
+        {totalScore !== undefined && (
+          <div className="mt-2 flex flex-col items-center">
+            <span className="font-['Bebas_Neue'] text-2xl text-white opacity-80">{totalScore.toFixed(3)}</span>
+            <span className="crt-text text-[10px] opacity-60 uppercase tracking-wider">ACUMULADO</span>
           </div>
-
-          <div className="hidden md:block w-[2px] h-60 bg-amber-500/40"></div>
-          <div className="block md:hidden w-full h-[2px] bg-amber-500/40"></div>
-
-          <div className="flex-1 w-full space-y-6">
-            <p className="crt-text text-2xl md:text-4xl leading-snug md:leading-tight opacity-100 uppercase tracking-tight text-center md:text-left font-medium">
-              "{comment}"
-            </p>
-          </div>
-        </div>
+        )}
       </div>
-      <div className="flex justify-center mt-2">
-        <ShareButton score={score} word={prompt} response={userWord} cardRef={cardRef} />
+
+      <div className="hidden md:block w-[2px] h-60 bg-amber-500/40"></div>
+      <div className="block md:hidden w-full h-[2px] bg-amber-500/40"></div>
+
+      <div className="flex-1 w-full space-y-6">
+        <p className="crt-text text-2xl md:text-4xl leading-snug md:leading-tight opacity-100 uppercase tracking-tight text-center md:text-left font-medium">
+          "{comment}"
+        </p>
+        <div className="flex justify-center md:justify-start">
+          <ShareButton score={score} word={prompt} response={userWord} />
+        </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 const DailyMode: React.FC<{
   prompts: string[];
