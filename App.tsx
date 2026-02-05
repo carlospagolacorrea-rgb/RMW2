@@ -393,7 +393,14 @@ const ShareButton: React.FC<{ score: number, word: string, response: string }> =
   );
 };
 
-const ResultDisplay: React.FC<{ score: number, comment: string, userWord: string, playerName?: string, totalScore?: number }> = ({ score, comment, userWord, playerName, totalScore }) => (
+const ResultDisplay: React.FC<{
+  score: number,
+  comment: string,
+  userWord: string,
+  prompt: string,
+  playerName?: string,
+  totalScore?: number
+}> = ({ score, comment, userWord, prompt, playerName, totalScore }) => (
   <div className="w-full flex flex-col items-center gap-6 animate-drop">
     <div className="flex flex-col items-center gap-1">
       {playerName && <span className="font-['Bebas_Neue'] text-amber-500 tracking-widest text-xl opacity-70 uppercase">JUGADOR: {playerName}</span>}
@@ -427,7 +434,7 @@ const ResultDisplay: React.FC<{ score: number, comment: string, userWord: string
           "{comment}"
         </p>
         <div className="flex justify-center md:justify-start">
-          <ShareButton score={score} word={userWord} response={userWord} />
+          <ShareButton score={score} word={prompt} response={userWord} />
         </div>
       </div>
     </div>
@@ -506,7 +513,13 @@ const DailyMode: React.FC<{
         </div>
       ) : (
         <div className="w-full flex flex-col gap-8 items-center animate-drop">
-          <ResultDisplay score={result.score} comment={result.comment} userWord={response} playerName={userNick || undefined} />
+          <ResultDisplay
+            score={result.score}
+            comment={result.comment}
+            userWord={response}
+            prompt={currentPrompt}
+            playerName={userNick || undefined}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
             <button onClick={() => { setResult(null); setResponse(''); setHasSubmitted(false); }} className="retro-button py-3 text-sm opacity-80 uppercase">REINTENTAR</button>
@@ -753,7 +766,8 @@ const MultiplayerResults: React.FC<{
                   score={p.score}
                   totalScore={p.totalScore}
                   comment={p.comment || ""}
-                  userWord={p.word}
+                  userWord={p.word || ''}
+                  prompt={prompt}
                   playerName={p.name}
                 />
               )}
