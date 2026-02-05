@@ -49,7 +49,20 @@ const WordBoard: React.FC<{ word: string; size?: 'sm' | 'md' | 'lg' }> = ({ word
 
 export const App: React.FC = () => {
   const [mode, setMode] = useState<GameMode>(GameMode.HOME);
+  const [showTutorial, setShowTutorial] = useState(false);
   const timeLeft = useCountdown();
+
+  useEffect(() => {
+    const tutorialSeen = localStorage.getItem('rmw_tutorial_seen');
+    if (!tutorialSeen) {
+      setShowTutorial(true);
+    }
+  }, []);
+
+  const closeTutorial = () => {
+    localStorage.setItem('rmw_tutorial_seen', 'true');
+    setShowTutorial(false);
+  };
   const [userNick, setUserNick] = useState<string>(localStorage.getItem('rankMyWord_nick') || '');
   const [dailyPrompts, setDailyPrompts] = useState<string[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -110,7 +123,8 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center px-4 max-w-4xl mx-auto py-10">
+    <div className="min-h-screen flex flex-col items-center px-4 max-w-4xl mx-auto py-10 relative">
+      {showTutorial && <Tutorial onClose={closeTutorial} />}
       <div className="retro-line"></div>
 
       <header className="w-full flex flex-col items-center gap-4">
@@ -166,12 +180,8 @@ export const App: React.FC = () => {
           />
         )}
 
-        {(mode === GameMode.DAILY_RANKING || mode === GameMode.GLOBAL_RANKING) && (
-          <RankingView
-            type={mode === GameMode.DAILY_RANKING ? 'DIARIO' : 'GLOBAL'}
-            onBack={() => setMode(GameMode.HOME)}
-          />
-        )}
+        {mode === GameMode.DAILY_RANKING && <RankingView title="RANKING DIARIO" fetchFn={getDailyRankings} isDaily={true} onBack={() => setMode(GameMode.HOME)} />}
+        {mode === GameMode.GLOBAL_RANKING && <RankingView title="RANKING GLOBAL" fetchFn={getGlobalRankings} isDaily={false} onBack={() => setMode(GameMode.HOME)} />}
 
         {mode === GameMode.MULTIPLAYER_SETUP && (
           <MultiplayerSetup
@@ -227,14 +237,90 @@ export const App: React.FC = () => {
 
       <div className="retro-line"></div>
 
-      <footer className="w-full text-center pb-10">
+      <footer className="w-full text-center pb-10 flex flex-col items-center gap-4">
         <span className="crt-text text-[10px] opacity-40 animate-blink uppercase">Estado: {loading ? 'Pensando...' : 'Listo'}</span>
+        <button
+          onClick={() => setShowTutorial(true)}
+          className="crt-text text-[10px] opacity-30 hover:opacity-100 transition-opacity uppercase tracking-[0.3em] border border-amber-500/20 px-4 py-1 rounded"
+        >
+          [ MOSTRAR AYUDA ]
+        </button>
       </footer>
     </div>
   );
 };
 
 // --- Hooks ---
+
+const Tutorial: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const [step, setStep] = useState(0);
+  const [displayText, setDisplayText] = useState('');
+
+  const steps = [
+    { title: "SISTEMA INICIADO", text: "BIENVENIDO A RANK MY WORD. UN DESAFÍO DE INGENIO HUMANO CONTRA IA." },
+    { title: "EL RETO", text: "CADA 4 HORAS SURGEN 3 PALABRAS. TU OBJETIVO: ENCONTRAR UN TÉRMINO RELACIONADO." },
+    { title: "LA PUNTUACIÓN", text: "LA IA EVALUARÁ TU RESPUESTA. BUSCA EL EQUILIBRIO ENTRE LO OBVIO Y LO ABSURDO PARA LOGRAR 10 PUNTOS." },
+    { title: "EL RANKING", text: "DEMUESTRA QUE ERES EL MEJOR Y DOMINA EL RANKING MUNDIAL." }
+  ];
+
+  useEffect(() => {
+    let currentText = '';
+    let charIndex = 0;
+    const fullText = steps[step].text;
+
+    const interval = setInterval(() => {
+      if (charIndex < fullText.length) {
+        currentText += fullText[charIndex];
+        setDisplayText(currentText);
+        charIndex++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 30);
+
+    return () => clearInterval(interval);
+  }, [step]);
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-6 backdrop-blur-sm">
+      <div className="max-w-xl w-full border-2 border-amber-500/50 p-8 glass-effect relative overflow-hidden shadow-[0_0_50px_rgba(255,188,71,0.1)]">
+        <div className="absolute top-0 left-0 w-full h-1 bg-amber-500/30 animate-scan"></div>
+
+        <div className="space-y-6">
+          <div className="flex justify-between items-center border-b border-amber-500/30 pb-4">
+            <h2 className="font-['Bebas_Neue'] text-3xl tracking-[0.2em] text-amber-500 animate-pulse">
+              {steps[step].title}
+            </h2>
+            <span className="text-xs opacity-40">STEP {step + 1}/{steps.length}</span>
+          </div>
+
+          <p className="text-lg leading-relaxed h-32 md:h-24 crt-text">
+            {displayText}
+            <span className="animate-blink">|</span>
+          </p>
+
+          <div className="flex justify-end gap-4 mt-8">
+            {step < steps.length - 1 ? (
+              <button
+                onClick={() => { setStep(s => s + 1); setDisplayText(''); }}
+                className="retro-button py-2 px-6 text-sm"
+              >
+                SIGUIENTE
+              </button>
+            ) : (
+              <button
+                onClick={onClose}
+                className="retro-button py-2 px-6 text-sm bg-amber-500 text-black border-none hover:bg-amber-400"
+              >
+                ENTENDIDO
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const useCountdown = () => {
   const [timeLeft, setTimeLeft] = useState('');
@@ -266,6 +352,47 @@ const useCountdown = () => {
 
 // --- Sub-components ---
 
+const ShareButton: React.FC<{ score: number, word: string, response: string }> = ({ score, word, response }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    const text = `📟 RANK MY WORD\n\nPalabra: ${word.toUpperCase()}\nRespuesta: ${response.toUpperCase()}\nScore: ${score.toFixed(3)}/10\n\n¿Puedes superarme?`;
+    const url = window.location.origin;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'RankMyWord - Mi Puntuación',
+          text: text,
+          url: url,
+        });
+      } catch (err) {
+        console.log('Error compartiendo:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Error al copiar:', err);
+      }
+    }
+  };
+
+  return (
+    <button
+      onClick={handleShare}
+      className={`retro-button py-2 px-6 flex items-center gap-2 transition-all duration-300 ${copied ? 'bg-white text-black border-white' : ''}`}
+    >
+      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z" />
+      </svg>
+      {copied ? '¡COPIADO!' : 'COMPARTIR RESULTADO'}
+    </button>
+  );
+};
+
 const ResultDisplay: React.FC<{ score: number, comment: string, userWord: string, playerName?: string, totalScore?: number }> = ({ score, comment, userWord, playerName, totalScore }) => (
   <div className="w-full flex flex-col items-center gap-6 animate-drop">
     <div className="flex flex-col items-center gap-1">
@@ -295,10 +422,13 @@ const ResultDisplay: React.FC<{ score: number, comment: string, userWord: string
       <div className="hidden md:block w-[2px] h-60 bg-amber-500/40"></div>
       <div className="block md:hidden w-full h-[2px] bg-amber-500/40"></div>
 
-      <div className="flex-1 w-full">
+      <div className="flex-1 w-full space-y-6">
         <p className="crt-text text-2xl md:text-4xl leading-snug md:leading-tight opacity-100 uppercase tracking-tight text-center md:text-left font-medium">
           "{comment}"
         </p>
+        <div className="flex justify-center md:justify-start">
+          <ShareButton score={score} word={userWord} response={userWord} />
+        </div>
       </div>
     </div>
   </div>
@@ -428,25 +558,60 @@ const DailyMode: React.FC<{
   );
 };
 
-const RankingView: React.FC<{ type: 'DIARIO' | 'GLOBAL', onBack: () => void }> = ({ type, onBack }) => {
+const RankingView: React.FC<{ title: string; fetchFn: () => Promise<RankingEntry[]>; isDaily?: boolean; onBack: () => void }> = ({ title, fetchFn, isDaily, onBack }) => {
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resetTime, setResetTime] = useState('');
 
   useEffect(() => {
-    const fetchRankings = async () => {
-      setLoading(true);
-      const data = type === 'DIARIO' ? await getDailyRankings() : await getGlobalRankings();
+    fetchFn().then(data => {
       setRankings(data);
       setLoading(false);
-    };
-    fetchRankings();
-  }, [type]);
+    });
+
+    if (isDaily) {
+      const updateResetTimer = () => {
+        const now = new Date();
+        const midnight = new Date(now);
+        midnight.setUTCHours(24, 0, 0, 0); // Set to next midnight UTC
+        const diff = midnight.getTime() - now.getTime();
+
+        if (diff <= 0) {
+          // If past midnight, set to next day's midnight
+          midnight.setUTCDate(midnight.getUTCDate() + 1);
+          const newDiff = midnight.getTime() - now.getTime();
+          const h = Math.floor(newDiff / 3600000).toString().padStart(2, '0');
+          const m = Math.floor((newDiff % 3600000) / 60000).toString().padStart(2, '0');
+          const s = Math.floor((newDiff % 60000) / 1000).toString().padStart(2, '0');
+          setResetTime(`${h}:${m}:${s}`);
+          return;
+        }
+
+        const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+        const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+        const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+        setResetTime(`${h}:${m}:${s}`);
+      };
+
+      updateResetTimer();
+      const interval = setInterval(updateResetTimer, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [fetchFn, isDaily]);
 
   return (
     <div className="flex flex-col items-center gap-8 py-6 animate-drop w-full max-h-[85vh]">
-      <div className="text-center">
-        <h2 className="font-['Bebas_Neue'] text-4xl tracking-widest uppercase">RANKING {type}</h2>
-        <p className="crt-text text-[10px] opacity-40 uppercase">TOP 10 JUGADORES</p>
+      <div className="text-center space-y-3">
+        <h2 className="font-['Bebas_Neue'] text-5xl tracking-widest uppercase text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.2)]">{title}</h2>
+        {isDaily && (
+          <div className="flex flex-col items-center gap-1">
+            <span className="crt-text text-[10px] opacity-40 uppercase tracking-[0.3em]">REINICIO EN</span>
+            <span className="font-['Bebas_Neue'] text-3xl text-amber-400 tracking-widest drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]">
+              {resetTime || '00:00:00'}
+            </span>
+          </div>
+        )}
+        <p className="crt-text text-[10px] opacity-30 uppercase tracking-widest mt-2">TOP 10 JUGADORES</p>
       </div>
 
       <div className="w-full border-2 border-amber-500/30 bg-black/60 overflow-y-auto overflow-x-hidden max-h-[450px] scrollbar-thin scrollbar-thumb-amber-500">

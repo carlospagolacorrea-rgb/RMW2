@@ -1,5 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
+import { WORD_POOL } from "./wordPool";
 
 const SCORING_PROMPT = `
 You are the evaluator for the game "RankMyWord".
@@ -55,21 +56,11 @@ export const getWordScore = async (prompt: string, responseWord: string) => {
 };
 
 /**
- * Genera una palabra creativa única para el modo multijugador usando IA
+ * Selecciona una palabra del pool masivo para el modo multijugador
  */
 export const generateCreativePrompt = async (): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents: "Genera una única palabra en español que sea evocadora, abstracta y profunda para un juego de asociación creativa. Ejemplo: 'Vértigo', 'Cicatriz', 'Espejismo', 'Umbral'. Solo devuelve la palabra, sin puntos ni comillas.",
-    });
-    const word = response.text.trim().split(/\s+/)[0].replace(/[".]/g, '');
-    return word.toUpperCase();
-  } catch (error) {
-    const fallbacks = ["VACÍO", "RAÍZ", "ECO", "BRÚJULA", "MAREA", "CENIZA", "LABERINTO"];
-    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
-  }
+  const randomIndex = Math.floor(Math.random() * WORD_POOL.length);
+  return WORD_POOL[randomIndex].toUpperCase();
 };
 
 export const getDailyPrompts = (): string[] => {
@@ -78,12 +69,7 @@ export const getDailyPrompts = (): string[] => {
   const hourBlock = Math.floor(now.getHours() / 4);
   const seed = dayOfYear + hourBlock;
 
-  const pool = [
-    "Olvido", "Cicatriz", "Eco", "Vértigo", "Susurro", "Órbita", "Espejismo", "Raíz", "Diluvio", "Ceniza",
-    "Brújula", "Naufragio", "Hilo", "Puente", "Sombra", "Latido", "Velo", "Abismo", "Relámpago", "Polvo",
-    "Mapa", "Llave", "Marea", "Cristal", "Muro", "Espejo", "Veneno", "Laberinto", "Péndulo", "Horizonte",
-    "Grito", "Calma", "Nudo", "Flecha", "Máscara", "Esqueleto", "Néctar", "Ciclo", "Ritmo", "Fuego"
-  ];
+  const pool = WORD_POOL;
 
   const getWord = (offset: number) => pool[(seed * 17 + offset * 31) % pool.length];
 
