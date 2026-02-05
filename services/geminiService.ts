@@ -27,10 +27,10 @@ Return a JSON object with:
 
 export const getWordScore = async (prompt: string, responseWord: string) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-  
+
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash-lite",
       contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
       config: {
         systemInstruction: SCORING_PROMPT,
@@ -86,6 +86,6 @@ export const getDailyPrompts = (): string[] => {
   ];
 
   const getWord = (offset: number) => pool[(seed * 17 + offset * 31) % pool.length];
-  
+
   return [getWord(1), getWord(2), getWord(3)];
 };
