@@ -26,10 +26,10 @@ Return a JSON object with:
 `;
 
 export const getWordScore = async (prompt: string, responseWord: string) => {
-  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || "" });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 
   try {
-    const result = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
       contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
       config: {
@@ -46,8 +46,8 @@ export const getWordScore = async (prompt: string, responseWord: string) => {
       }
     });
 
-    const text = (result as any).text || "{}";
-    return JSON.parse(text);
+    const result = JSON.parse(response.text || "{}");
+    return result;
   } catch (error) {
     console.error("Gemini API Error:", error);
     return { score: 0, comment: "Incluso la IA se ha quedado sin palabras ante semejante... cosa." };
@@ -58,14 +58,13 @@ export const getWordScore = async (prompt: string, responseWord: string) => {
  * Genera una palabra creativa única para el modo multijugador usando IA
  */
 export const generateCreativePrompt = async (): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || "" });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
       contents: "Genera una única palabra en español que sea evocadora, abstracta y profunda para un juego de asociación creativa. Ejemplo: 'Vértigo', 'Cicatriz', 'Espejismo', 'Umbral'. Solo devuelve la palabra, sin puntos ni comillas.",
     });
-    const text = (response as any).text || "";
-    const word = text.trim().split(/\s+/)[0].replace(/[".]/g, '');
+    const word = response.text.trim().split(/\s+/)[0].replace(/[".]/g, '');
     return word.toUpperCase();
   } catch (error) {
     const fallbacks = ["VACÍO", "RAÍZ", "ECO", "BRÚJULA", "MAREA", "CENIZA", "LABERINTO"];
