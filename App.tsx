@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { GameMode, Player, ScoreCache, LeaderboardEntry } from './types';
 import { getDailyPrompts, getWordScore, generateCreativePrompt } from './services/geminiService';
+import { getGlobalRankings, getDailyRankings, submitGameScore, RankingEntry } from './services/supabaseClient';
 
 // --- Retro UI Components ---
 
@@ -110,16 +111,16 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center px-4 max-w-4xl mx-auto py-10">
       <div className="retro-line"></div>
-      
+
       <header className="w-full flex flex-col items-center gap-4">
         <div className="relative group cursor-pointer" onClick={() => setMode(GameMode.HOME)}>
           <div className="absolute -top-12 -left-12 opacity-80 hidden md:block">
-             <svg width="80" height="80" viewBox="0 0 100 100" fill="currentColor">
-                <circle cx="50" cy="40" r="20" />
-                <path d="M30 70 Q50 40 70 70" stroke="currentColor" strokeWidth="4" fill="none" />
-                <rect x="35" y="35" width="5" height="5" />
-                <rect x="60" y="35" width="5" height="5" />
-             </svg>
+            <svg width="80" height="80" viewBox="0 0 100 100" fill="currentColor">
+              <circle cx="50" cy="40" r="20" />
+              <path d="M30 70 Q50 40 70 70" stroke="currentColor" strokeWidth="4" fill="none" />
+              <rect x="35" y="35" width="5" height="5" />
+              <rect x="60" y="35" width="5" height="5" />
+            </svg>
           </div>
           <WordBoard word="RANKMYWORD" size="sm" />
         </div>
@@ -150,8 +151,8 @@ export const App: React.FC = () => {
         )}
 
         {mode === GameMode.DAILY && (
-          <DailyMode 
-            prompts={dailyPrompts} 
+          <DailyMode
+            prompts={dailyPrompts}
             userNick={userNick}
             onRegister={handleRegister}
             getCachedScore={getCachedScore}
@@ -160,21 +161,21 @@ export const App: React.FC = () => {
         )}
 
         {(mode === GameMode.DAILY_RANKING || mode === GameMode.GLOBAL_RANKING) && (
-          <RankingView 
-            type={mode === GameMode.DAILY_RANKING ? 'DIARIO' : 'GLOBAL'} 
+          <RankingView
+            type={mode === GameMode.DAILY_RANKING ? 'DIARIO' : 'GLOBAL'}
             onBack={() => setMode(GameMode.HOME)}
           />
         )}
 
         {mode === GameMode.MULTIPLAYER_SETUP && (
-          <MultiplayerSetup 
+          <MultiplayerSetup
             onStart={startMultiplayerGame}
             loading={loading}
           />
         )}
 
         {mode === GameMode.MULTIPLAYER_GAME && (
-          <MultiplayerGame 
+          <MultiplayerGame
             key={currentPlayerIndex}
             prompt={multiplayerPrompt}
             currentPlayer={players[currentPlayerIndex]}
@@ -191,15 +192,15 @@ export const App: React.FC = () => {
                 setLoading(true);
                 const scored = await Promise.all(updated.map(async p => {
                   const res = await getCachedScore(multiplayerPrompt, p.word!);
-                  return { 
-                    ...p, 
-                    score: res.score, 
+                  return {
+                    ...p,
+                    score: res.score,
                     comment: res.comment,
                     totalScore: (p.totalScore || 0) + res.score // Accumulate score
                   };
                 }));
                 // Sort by current round score for suspenseful reveal
-                setPlayers(scored.sort((a,b) => (a.score||0) - (b.score||0)));
+                setPlayers(scored.sort((a, b) => (a.score || 0) - (b.score || 0)));
                 setLoading(false);
                 setMode(GameMode.MULTIPLAYER_RESULTS);
               }
@@ -208,8 +209,8 @@ export const App: React.FC = () => {
         )}
 
         {mode === GameMode.MULTIPLAYER_RESULTS && (
-          <MultiplayerResults 
-            players={players} 
+          <MultiplayerResults
+            players={players}
             prompt={multiplayerPrompt}
             onFinish={() => setMode(GameMode.HOME)}
             onRestart={restartMultiplayerGame}
@@ -219,7 +220,7 @@ export const App: React.FC = () => {
       </main>
 
       <div className="retro-line"></div>
-      
+
       <footer className="w-full text-center pb-10">
         <span className="crt-text text-[10px] opacity-40 animate-blink uppercase">Estado: {loading ? 'Pensando...' : 'Listo'}</span>
       </footer>
@@ -246,7 +247,7 @@ const ResultDisplay: React.FC<{ score: number, comment: string, userWord: string
           </span>
         </div>
         <span className="crt-text text-sm md:text-md tracking-[0.5em] opacity-80 font-bold uppercase">RONDA</span>
-        
+
         {totalScore !== undefined && (
           <div className="mt-2 flex flex-col items-center">
             <span className="font-['Bebas_Neue'] text-2xl text-white opacity-80">{totalScore.toFixed(3)}</span>
@@ -254,7 +255,7 @@ const ResultDisplay: React.FC<{ score: number, comment: string, userWord: string
           </div>
         )}
       </div>
-      
+
       <div className="hidden md:block w-[2px] h-60 bg-amber-500/40"></div>
       <div className="block md:hidden w-full h-[2px] bg-amber-500/40"></div>
 
@@ -271,15 +272,16 @@ const DailyMode: React.FC<{
   prompts: string[];
   userNick: string;
   onRegister: (nick: string) => void;
-  getCachedScore: (p: string, r: string) => Promise<{score: number, comment: string}>;
+  getCachedScore: (p: string, r: string) => Promise<{ score: number, comment: string }>;
   onExit: () => void;
 }> = ({ prompts, userNick, onRegister, getCachedScore, onExit }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [response, setResponse] = useState('');
-  const [result, setResult] = useState<{score: number, comment: string} | null>(null);
+  const [result, setResult] = useState<{ score: number, comment: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showNickInput, setShowNickInput] = useState(false);
   const [tempNick, setTempNick] = useState('');
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const currentPrompt = prompts[currentIndex];
 
@@ -291,11 +293,22 @@ const DailyMode: React.FC<{
     setIsLoading(false);
   };
 
+  const handleSaveScore = async (nick: string) => {
+    if (!nick.trim() || !result) return;
+    setIsLoading(true);
+    await submitGameScore(nick, result.score, currentPrompt, response);
+    onRegister(nick);
+    setHasSubmitted(true);
+    setShowNickInput(false);
+    setIsLoading(false);
+  };
+
   const handleNext = () => {
     if (currentIndex < prompts.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setResponse('');
       setResult(null);
+      setHasSubmitted(false);
     } else {
       onExit();
     }
@@ -312,7 +325,7 @@ const DailyMode: React.FC<{
 
       {!result ? (
         <div className="flex flex-col w-full max-w-md gap-6 animate-drop">
-          <input 
+          <input
             autoFocus
             type="text"
             placeholder="ESCRIBE TU ASOCIACIÓN..."
@@ -330,8 +343,14 @@ const DailyMode: React.FC<{
           <ResultDisplay score={result.score} comment={result.comment} userWord={response} playerName={userNick || undefined} />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-            <button onClick={() => {setResult(null); setResponse('');}} className="retro-button py-3 text-sm opacity-80 uppercase">REINTENTAR</button>
-            <button onClick={() => setShowNickInput(true)} className="retro-button py-3 text-sm uppercase">GUARDAR PUNTUACIÓN</button>
+            <button onClick={() => { setResult(null); setResponse(''); setHasSubmitted(false); }} className="retro-button py-3 text-sm opacity-80 uppercase">REINTENTAR</button>
+            <button
+              disabled={hasSubmitted}
+              onClick={() => setShowNickInput(true)}
+              className={`retro-button py-3 text-sm uppercase ${hasSubmitted ? 'opacity-30 cursor-not-allowed' : ''}`}
+            >
+              {hasSubmitted ? 'PUNTUACIÓN GUARDADA' : 'GUARDAR PUNTUACIÓN'}
+            </button>
             <button onClick={handleNext} className="retro-button py-3 text-sm font-bold uppercase">SIGUIENTE</button>
           </div>
 
@@ -339,26 +358,27 @@ const DailyMode: React.FC<{
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200">
               <div className="flex flex-col w-full max-w-sm gap-6 border-2 border-amber-500 p-8 bg-black shadow-[0_0_50px_rgba(255,188,71,0.2)] animate-drop relative">
                 <h3 className="font-['Bebas_Neue'] text-3xl tracking-[0.2em] text-center uppercase text-amber-500 mb-2">IDENTIFÍCATE</h3>
-                
-                <input 
+
+                <input
                   autoFocus
-                  type="text" 
-                  value={tempNick} 
-                  onChange={e => setTempNick(e.target.value)} 
-                  placeholder="APODO" 
-                  className="retro-input py-3 text-2xl w-full bg-transparent focus:shadow-[0_0_15px_rgba(255,188,71,0.3)] transition-shadow" 
-                  onKeyDown={e => e.key === 'Enter' && onRegister(tempNick)}
+                  type="text"
+                  value={tempNick}
+                  onChange={e => setTempNick(e.target.value)}
+                  placeholder="APODO"
+                  className="retro-input py-3 text-2xl w-full bg-transparent focus:shadow-[0_0_15px_rgba(255,188,71,0.3)] transition-shadow"
+                  onKeyDown={e => e.key === 'Enter' && handleSaveScore(tempNick)}
                 />
-                
-                <button 
-                  onClick={() => {onRegister(tempNick); setShowNickInput(false);}} 
+
+                <button
+                  disabled={isLoading || !tempNick.trim()}
+                  onClick={() => handleSaveScore(tempNick)}
                   className="retro-button py-3 text-xl uppercase w-full mt-2 hover:shadow-[0_0_20px_rgba(255,188,71,0.4)]"
                 >
-                  GUARDAR
+                  {isLoading ? 'GUARDANDO...' : 'GUARDAR'}
                 </button>
-                
-                <button 
-                  onClick={() => setShowNickInput(false)} 
+
+                <button
+                  onClick={() => setShowNickInput(false)}
                   className="crt-text text-xs opacity-40 uppercase hover:opacity-100 mt-2 tracking-widest transition-opacity text-center"
                 >
                   CANCELAR
@@ -373,18 +393,18 @@ const DailyMode: React.FC<{
 };
 
 const RankingView: React.FC<{ type: 'DIARIO' | 'GLOBAL', onBack: () => void }> = ({ type, onBack }) => {
-  const mockData: LeaderboardEntry[] = [
-    { nick: "RETRO_KING", prompt: "Espejo", response: "Memoria", score: 9.875 },
-    { nick: "VOX_OPERATOR", prompt: "Raíz", response: "Ancla", score: 9.210 },
-    { nick: "NEON_DREAMER", prompt: "Susurro", response: "Eco", score: 8.542 },
-    { nick: "CYBER_PUNK", prompt: "Fuego", response: "Digital", score: 7.911 },
-    { nick: "VOID_RUNNER", prompt: "Abismo", response: "Caída", score: 7.200 },
-    { nick: "MIND_WAVE", prompt: "Ciclo", response: "Espiral", score: 6.850 },
-    { nick: "NIGHT_OWL", prompt: "Sombra", response: "Refugio", score: 6.120 },
-    { nick: "PIXEL_ART", prompt: "Luz", response: "Fragmento", score: 5.900 },
-    { nick: "USER_888", prompt: "Muro", response: "Silencio", score: 4.560 },
-    { nick: "BETA_TESTER", prompt: "Error", response: "Oportunidad", score: 3.100 },
-  ];
+  const [rankings, setRankings] = useState<RankingEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRankings = async () => {
+      setLoading(true);
+      const data = type === 'DIARIO' ? await getDailyRankings() : await getGlobalRankings();
+      setRankings(data);
+      setLoading(false);
+    };
+    fetchRankings();
+  }, [type]);
 
   return (
     <div className="flex flex-col items-center gap-8 py-6 animate-drop w-full max-h-[85vh]">
@@ -392,51 +412,55 @@ const RankingView: React.FC<{ type: 'DIARIO' | 'GLOBAL', onBack: () => void }> =
         <h2 className="font-['Bebas_Neue'] text-4xl tracking-widest uppercase">RANKING {type}</h2>
         <p className="crt-text text-[10px] opacity-40 uppercase">TOP 10 JUGADORES</p>
       </div>
-      
+
       <div className="w-full border-2 border-amber-500/30 bg-black/60 overflow-y-auto overflow-x-hidden max-h-[450px] scrollbar-thin scrollbar-thumb-amber-500">
-        <table className="w-full text-left border-collapse">
-          <thead className="sticky top-0 bg-black z-10 border-b-2 border-amber-500/50">
-            <tr className="crt-text text-[10px] md:text-xs opacity-80 text-amber-500 uppercase">
-              <th className="p-4 font-black">#</th>
-              <th className="p-4 font-black">APODO</th>
-              <th className="p-4 font-black hidden md:table-cell">ASOCIACIÓN</th>
-              <th className="p-4 font-black text-right">SCORE</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mockData.map((entry, i) => (
-              <tr key={i} className="border-b border-amber-500/10 hover:bg-amber-500/5 transition-colors group">
-                <td className="p-4 font-['Bebas_Neue'] text-xl opacity-40">{i + 1}</td>
-                <td className="p-4">
-                  <div className="flex flex-col">
-                    <span className="font-['Bebas_Neue'] text-xl md:text-2xl tracking-wider group-hover:text-white transition-colors uppercase">{entry.nick}</span>
-                    {/* Estilo mejorado para asociación en móvil */}
-                    <div className="md:hidden mt-1 flex items-center gap-1.5 crt-text text-[10px] uppercase font-bold">
+        {loading ? (
+          <div className="p-20 text-center crt-text text-amber-500 animate-pulse uppercase">Cargando datos...</div>
+        ) : rankings.length === 0 ? (
+          <div className="p-20 text-center crt-text text-amber-500/50 uppercase">No hay puntuaciones registradas aún.</div>
+        ) : (
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 bg-black z-10 border-b-2 border-amber-500/50">
+              <tr className="crt-text text-[10px] md:text-xs opacity-80 text-amber-500 uppercase">
+                <th className="p-4 font-black">#</th>
+                <th className="p-4 font-black">APODO</th>
+                <th className="p-4 font-black hidden md:table-cell">ASOCIACIÓN</th>
+                <th className="p-4 font-black text-right">SCORE</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rankings.map((entry, i) => (
+                <tr key={i} className="border-b border-amber-500/10 hover:bg-amber-500/5 transition-colors group">
+                  <td className="p-4 font-['Bebas_Neue'] text-xl opacity-40">{i + 1}</td>
+                  <td className="p-4">
+                    <div className="flex flex-col">
+                      <span className="font-['Bebas_Neue'] text-xl md:text-2xl tracking-wider group-hover:text-white transition-colors uppercase">{entry.player_name}</span>
+                      <div className="md:hidden mt-1 flex items-center gap-1.5 crt-text text-[10px] uppercase font-bold">
                         <span className="opacity-40">{entry.prompt}</span>
                         <span className="text-amber-500">»</span>
                         <span className="text-white italic">{entry.response}</span>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="p-4 hidden md:table-cell">
-                   {/* Estilo mejorado para asociación en escritorio */}
-                   <div className="flex items-center gap-3 font-['Courier_Prime'] text-xs">
-                     <span className="bg-amber-500/5 border border-amber-500/20 px-2 py-0.5 opacity-60 uppercase">{entry.prompt}</span>
-                     <span className="text-amber-500 font-bold animate-pulse text-lg">→</span>
-                     <span className="bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-white uppercase font-bold italic tracking-wider shadow-[0_0_5px_rgba(255,255,255,0.1)]">
-                       {entry.response}
-                     </span>
-                   </div>
-                </td>
-                <td className="p-4 text-right font-bold text-amber-500 text-lg md:text-2xl">
-                  {entry.score.toFixed(3)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                  <td className="p-4 hidden md:table-cell">
+                    <div className="flex items-center gap-3 font-['Courier_Prime'] text-xs">
+                      <span className="bg-amber-500/5 border border-amber-500/20 px-2 py-0.5 opacity-60 uppercase">{entry.prompt}</span>
+                      <span className="text-amber-500 font-bold animate-pulse text-lg">→</span>
+                      <span className="bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-white uppercase font-bold italic tracking-wider shadow-[0_0_5px_rgba(255,255,255,0.1)]">
+                        {entry.response}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-4 text-right font-bold text-amber-500 text-lg md:text-2xl">
+                    {entry.score.toFixed(3)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
-      
+
       <button onClick={onBack} className="retro-button px-12 py-4 w-full max-w-sm uppercase">VOLVER AL MENÚ</button>
     </div>
   );
@@ -477,7 +501,7 @@ const MultiplayerResults: React.FC<{
             clearInterval(interval);
             setTimeout(() => {
               setIsThinking(false);
-              setRev(0); 
+              setRev(0);
             }, 800);
             return prev;
           }
@@ -523,15 +547,15 @@ const MultiplayerResults: React.FC<{
         <div className="w-full space-y-24">
           {players.slice(0, rev + 1).map((p, i) => (
             <div key={i} className="animate-drop">
-               {p.word && p.score !== undefined && (
-                 <ResultDisplay 
-                   score={p.score} 
-                   totalScore={p.totalScore} 
-                   comment={p.comment || ""} 
-                   userWord={p.word} 
-                   playerName={p.name} 
-                 />
-               )}
+              {p.word && p.score !== undefined && (
+                <ResultDisplay
+                  score={p.score}
+                  totalScore={p.totalScore}
+                  comment={p.comment || ""}
+                  userWord={p.word}
+                  playerName={p.name}
+                />
+              )}
             </div>
           ))}
         </div>
@@ -539,29 +563,29 @@ const MultiplayerResults: React.FC<{
 
       {/* Leaderboard Table shown at the end */}
       {isFinished && (
-         <div className="w-full max-w-2xl mt-12 animate-in slide-in-from-bottom-10 fade-in duration-500">
-            <h3 className="font-['Bebas_Neue'] text-3xl tracking-widest uppercase text-center mb-6 text-amber-500">CLASIFICACIÓN ACTUAL</h3>
-            <div className="w-full border-2 border-amber-500/30 bg-black/60">
-              <table className="w-full text-left">
-                <thead className="bg-amber-500/10 border-b border-amber-500/30 text-amber-500 crt-text text-xs uppercase">
-                  <tr>
-                    <th className="p-3">#</th>
-                    <th className="p-3">JUGADOR</th>
-                    <th className="p-3 text-right">TOTAL</th>
+        <div className="w-full max-w-2xl mt-12 animate-in slide-in-from-bottom-10 fade-in duration-500">
+          <h3 className="font-['Bebas_Neue'] text-3xl tracking-widest uppercase text-center mb-6 text-amber-500">CLASIFICACIÓN ACTUAL</h3>
+          <div className="w-full border-2 border-amber-500/30 bg-black/60">
+            <table className="w-full text-left">
+              <thead className="bg-amber-500/10 border-b border-amber-500/30 text-amber-500 crt-text text-xs uppercase">
+                <tr>
+                  <th className="p-3">#</th>
+                  <th className="p-3">JUGADOR</th>
+                  <th className="p-3 text-right">TOTAL</th>
+                </tr>
+              </thead>
+              <tbody className="crt-text text-sm">
+                {sortedByTotal.map((p, i) => (
+                  <tr key={p.id} className="border-b border-amber-500/10">
+                    <td className="p-3 opacity-60">{i + 1}</td>
+                    <td className="p-3 font-bold">{p.name}</td>
+                    <td className="p-3 text-right text-amber-500">{p.totalScore.toFixed(3)}</td>
                   </tr>
-                </thead>
-                <tbody className="crt-text text-sm">
-                  {sortedByTotal.map((p, i) => (
-                    <tr key={p.id} className="border-b border-amber-500/10">
-                      <td className="p-3 opacity-60">{i + 1}</td>
-                      <td className="p-3 font-bold">{p.name}</td>
-                      <td className="p-3 text-right text-amber-500">{p.totalScore.toFixed(3)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-         </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       <div className="fixed bottom-0 left-0 w-full flex justify-center p-6 bg-gradient-to-t from-black via-black/95 to-transparent z-50">
@@ -597,7 +621,7 @@ const MultiplayerSetup: React.FC<{ onStart: (names: string[]) => void, loading: 
             const nn = [...names];
             nn[i] = e.target.value;
             setNames(nn);
-          }} placeholder={`JUGADOR ${i+1}`} className="retro-input w-full py-2 text-xl uppercase" />
+          }} placeholder={`JUGADOR ${i + 1}`} className="retro-input w-full py-2 text-xl uppercase" />
         ))}
         {names.length < 8 && (
           <button onClick={() => setNames([...names, ''])} className="crt-text text-[10px] opacity-40 uppercase hover:opacity-100 tracking-widest">+ AÑADIR JUGADOR</button>
@@ -629,9 +653,9 @@ const MultiplayerGame: React.FC<{
     return (
       <div className="flex flex-col items-center gap-12 py-20 animate-pulse">
         <div className="text-center space-y-4">
-           <div className="w-20 h-20 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-           <h3 className="font-['Bebas_Neue'] text-3xl text-amber-500 tracking-wider uppercase">EVALUANDO RESULTADOS...</h3>
-           <p className="crt-text text-xs opacity-50 uppercase">LA IA ESTÁ JUZGANDO VUESTRAS ALMAS</p>
+          <div className="w-20 h-20 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <h3 className="font-['Bebas_Neue'] text-3xl text-amber-500 tracking-wider uppercase">EVALUANDO RESULTADOS...</h3>
+          <p className="crt-text text-xs opacity-50 uppercase">LA IA ESTÁ JUZGANDO VUESTRAS ALMAS</p>
         </div>
       </div>
     );
@@ -646,14 +670,14 @@ const MultiplayerGame: React.FC<{
           <h3 className="font-['Bebas_Neue'] text-4xl text-amber-500 tracking-wider uppercase">TURNO DE: {currentPlayer.name}</h3>
           <p className="crt-text text-xs opacity-50 uppercase">Jugador {playerIndex + 1} de {totalPlayers}</p>
         </div>
-        <input 
-          autoFocus 
-          type="text" 
-          value={val} 
-          onChange={e => setVal(e.target.value)} 
-          onKeyDown={e => e.key === 'Enter' && handleSubmission()} 
-          placeholder="TU RESPUESTA..." 
-          className="retro-input w-full py-6 text-5xl border-b-4 border-t-0 border-x-0 rounded-none focus:border-white transition-colors uppercase" 
+        <input
+          autoFocus
+          type="text"
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSubmission()}
+          placeholder="TU RESPUESTA..."
+          className="retro-input w-full py-6 text-5xl border-b-4 border-t-0 border-x-0 rounded-none focus:border-white transition-colors uppercase"
         />
         <button onClick={handleSubmission} className="retro-button py-5 w-full text-2xl uppercase" disabled={loading}>
           {loading ? 'EVALUANDO ASOCIACIÓN...' : 'JUGAR'}

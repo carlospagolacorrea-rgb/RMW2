@@ -33,7 +33,7 @@ export interface DailyResult {
 }
 
 export interface LeaderboardEntry {
-  nick: string;
+  player_name: string;
   prompt: string;
   response: string;
   score: number;
