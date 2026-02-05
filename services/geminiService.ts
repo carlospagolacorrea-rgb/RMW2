@@ -61,7 +61,7 @@ export const generateCreativePrompt = async (): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash-lite",
       contents: "Genera una única palabra en español que sea evocadora, abstracta y profunda para un juego de asociación creativa. Ejemplo: 'Vértigo', 'Cicatriz', 'Espejismo', 'Umbral'. Solo devuelve la palabra, sin puntos ni comillas.",
     });
     const word = response.text.trim().split(/\s+/)[0].replace(/[".]/g, '');
