@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { GameMode, Player, ScoreCache, LeaderboardEntry } from './types';
-import { getDailyPrompts, getWordScore, generateCreativePrompt } from './services/geminiService';
+import { getDailyPrompts, getWordScore, generateCreativePrompt, getNextRotationTime } from './services/geminiService';
 import { getGlobalRankings, getDailyRankings, submitGameScore, RankingEntry } from './services/supabaseClient';
 
 // --- Retro UI Components ---
@@ -49,6 +49,7 @@ const WordBoard: React.FC<{ word: string; size?: 'sm' | 'md' | 'lg' }> = ({ word
 
 export const App: React.FC = () => {
   const [mode, setMode] = useState<GameMode>(GameMode.HOME);
+  const timeLeft = useCountdown();
   const [userNick, setUserNick] = useState<string>(localStorage.getItem('rankMyWord_nick') || '');
   const [dailyPrompts, setDailyPrompts] = useState<string[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -137,12 +138,17 @@ export const App: React.FC = () => {
             <div className="text-center space-y-6 mb-4 max-w-2xl">
               <h3 className="font-['Bebas_Neue'] text-6xl md:text-7xl tracking-widest uppercase text-amber-500 drop-shadow-[0_0_15px_rgba(255,188,71,0.3)]">DOMINA EL RANKING</h3>
               <p className="crt-text text-xs md:text-sm opacity-80 leading-relaxed text-center">
-                CADA 4 HORAS SURGEN 3 NUEVAS PALABRAS. TU OBJETIVO ES RESPONDER CON UN TÉRMINO QUE ESTÉ EN EL PUNTO EXACTO ENTRE LO OBVIO Y LO ABSURDO. CONSIGUE LA MÁXIMA PUNTUACIÓN Y DOMINA EL RANKING DIARIO O COMPITE CON AMIGOS EN EL MODO LOCAL.
+                CADA 4 HORAS SURGEN 3 NUEVAS PALABRAS. TU OBJETIVO ES RESPONDER CON UN TÉRMINO QUE ESTÉ EN EL PUNTO EXACTO ENTRE LO OBVIO Y LO ABSURDO. CONSIGUE LA MÁXIMA PUNTUACIÓN Y DOMINA EL RANKING MUNDIAL O COMPITE CON AMIGOS EN EL MODO LOCAL.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-              <button onClick={() => setMode(GameMode.DAILY)} className="retro-button py-6 px-10">Reto Diario</button>
+              <button onClick={() => setMode(GameMode.DAILY)} className="retro-button py-6 px-10 flex flex-col items-center justify-center gap-1 group">
+                <span className="text-xl md:text-2xl font-black">Reto Diario</span>
+                <span className="crt-text text-sm md:text-base font-black opacity-90 transition-opacity tracking-widest text-black">
+                  SIGUIENTE EN {timeLeft || '00:00:00'}
+                </span>
+              </button>
               <button onClick={() => setMode(GameMode.MULTIPLAYER_SETUP)} className="retro-button py-6 px-10">Duelo Local</button>
               <button onClick={() => setMode(GameMode.DAILY_RANKING)} className="retro-button py-4 px-10 text-lg">Ranking Diario</button>
               <button onClick={() => setMode(GameMode.GLOBAL_RANKING)} className="retro-button py-4 px-10 text-lg">Ranking Global</button>
@@ -226,6 +232,36 @@ export const App: React.FC = () => {
       </footer>
     </div>
   );
+};
+
+// --- Hooks ---
+
+const useCountdown = () => {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const next = getNextRotationTime();
+      const diff = next.getTime() - new Date().getTime();
+
+      if (diff <= 0) {
+        window.location.reload();
+        return;
+      }
+
+      const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+      const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+      const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+
+      setTimeLeft(`${h}:${m}:${s}`);
+    };
+
+    updateTimer();
+    const timer = setInterval(updateTimer, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return timeLeft;
 };
 
 // --- Sub-components ---

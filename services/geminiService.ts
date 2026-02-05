@@ -89,3 +89,11 @@ export const getDailyPrompts = (): string[] => {
 
   return [getWord(1), getWord(2), getWord(3)];
 };
+
+export const getNextRotationTime = (): Date => {
+  const now = new Date();
+  const nextHour = (Math.floor(now.getHours() / 4) + 1) * 4;
+  const nextRotation = new Date(now);
+  nextRotation.setHours(nextHour, 0, 0, 0);
+  return nextRotation;
+};
