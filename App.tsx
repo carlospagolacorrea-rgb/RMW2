@@ -2,7 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import { GameMode, Player, ScoreCache, LeaderboardEntry } from './types';
 import { getDailyPrompts, getWordScore, generateCreativePrompt, getNextRotationTime } from './services/geminiService';
-import { getGlobalRankings, getDailyRankings, submitGameScore, RankingEntry } from './services/supabaseClient';
+import {
+  getGlobalRankings,
+  getDailyRankings,
+  submitGameScore,
+  RankingEntry,
+  supabase,
+  signInWithGoogle,
+  signInWithFacebook,
+  getUserPlays,
+  UserPlay
+} from './services/supabaseClient';
+import { User } from '@supabase/supabase-js';
 
 // --- Retro UI Components ---
 
@@ -50,7 +61,31 @@ const WordBoard: React.FC<{ word: string; size?: 'sm' | 'md' | 'lg' }> = ({ word
 export const App: React.FC = () => {
   const [mode, setMode] = useState<GameMode>(GameMode.HOME);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const timeLeft = useCountdown();
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        setUserNick(session.user.user_metadata.username || session.user.email?.split('@')[0] || '');
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        setUserNick(session.user.user_metadata.username || session.user.email?.split('@')[0] || '');
+      } else {
+        setUserNick(localStorage.getItem('rankMyWord_nick') || '');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const tutorialSeen = localStorage.getItem('rmw_tutorial_seen');
@@ -98,6 +133,12 @@ export const App: React.FC = () => {
     return result;
   };
 
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setUserNick(localStorage.getItem('rankMyWord_nick') || '');
+  };
+
   const startMultiplayerGame = async (playerNames: string[]) => {
     setLoading(true);
     // Init totalScore to 0
@@ -125,6 +166,7 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center px-4 max-w-4xl mx-auto py-10 relative">
       {showTutorial && <Tutorial onClose={closeTutorial} />}
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
       <div className="retro-line"></div>
 
       <header className="w-full flex flex-col items-center gap-4">
@@ -166,6 +208,7 @@ export const App: React.FC = () => {
               <button onClick={() => setMode(GameMode.MULTIPLAYER_SETUP)} className="retro-button py-6 px-10">Duelo Local</button>
               <button onClick={() => setMode(GameMode.DAILY_RANKING)} className="retro-button py-4 px-10 text-lg">Ranking Diario</button>
               <button onClick={() => setMode(GameMode.GLOBAL_RANKING)} className="retro-button py-4 px-10 text-lg">Ranking Global</button>
+              {user && <button onClick={() => setMode(GameMode.USER_HISTORY)} className="retro-button py-4 px-10 text-lg col-span-1 md:col-span-2 text-amber-500 border-amber-500/50">Mis Jugadas</button>}
             </div>
           </div>
         )}
@@ -174,14 +217,17 @@ export const App: React.FC = () => {
           <DailyMode
             prompts={dailyPrompts}
             userNick={userNick}
+            user={user}
             onRegister={handleRegister}
             getCachedScore={getCachedScore}
             onExit={() => setMode(GameMode.HOME)}
+            onShowAuth={() => setShowAuthModal(true)}
           />
         )}
 
         {mode === GameMode.DAILY_RANKING && <RankingView title="RANKING DIARIO" fetchFn={getDailyRankings} isDaily={true} onBack={() => setMode(GameMode.HOME)} />}
         {mode === GameMode.GLOBAL_RANKING && <RankingView title="RANKING GLOBAL" fetchFn={getGlobalRankings} isDaily={false} onBack={() => setMode(GameMode.HOME)} />}
+        {mode === GameMode.USER_HISTORY && user && <UserHistoryView user={user} onBack={() => setMode(GameMode.HOME)} />}
 
         {mode === GameMode.MULTIPLAYER_SETUP && (
           <MultiplayerSetup
@@ -238,13 +284,37 @@ export const App: React.FC = () => {
       <div className="retro-line"></div>
 
       <footer className="w-full text-center pb-10 flex flex-col items-center gap-4">
-        <span className="crt-text text-[10px] opacity-40 animate-blink uppercase">Estado: {loading ? 'Pensando...' : 'Listo'}</span>
-        <button
-          onClick={() => setShowTutorial(true)}
-          className="crt-text text-[10px] opacity-30 hover:opacity-100 transition-opacity uppercase tracking-[0.3em] border border-amber-500/20 px-4 py-1 rounded"
-        >
-          [ MOSTRAR AYUDA ]
-        </button>
+        <div className="flex flex-col items-center gap-4 w-full max-w-xs">
+          {user ? (
+            <div className="flex flex-col items-center gap-2">
+              <span className="crt-text text-xs text-amber-500 uppercase tracking-widest font-bold">SESIÓN INICIADA: {userNick}</span>
+              <button
+                onClick={logout}
+                className="crt-text text-[10px] text-amber-500/50 hover:text-amber-500 transition-colors uppercase tracking-[0.3em] border border-amber-500/20 hover:border-amber-500/50 px-6 py-1 rounded bg-amber-500/5"
+              >
+                [ CERRAR SESIÓN ]
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-[0.3em] border border-amber-500/40 hover:border-amber-500 px-6 py-1.5 rounded bg-amber-500/5 w-full max-w-[240px]"
+            >
+              [ LOGIN / REGISTRO ]
+            </button>
+          )}
+
+          <button
+            onClick={() => setShowTutorial(true)}
+            className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-[0.3em] border border-amber-500/40 hover:border-amber-500 px-6 py-1.5 rounded bg-amber-500/5 w-full max-w-[240px]"
+          >
+            [ MOSTRAR AYUDA ]
+          </button>
+
+          <span className="crt-text text-[10px] text-amber-500 animate-blink uppercase tracking-widest font-bold mt-2">
+            Estado: {loading ? 'Pensando...' : 'Listo'}
+          </span>
+        </div>
       </footer>
     </div>
   );
@@ -444,10 +514,12 @@ const ResultDisplay: React.FC<{
 const DailyMode: React.FC<{
   prompts: string[];
   userNick: string;
+  user?: User | null;
   onRegister: (nick: string) => void;
   getCachedScore: (p: string, r: string) => Promise<{ score: number, comment: string }>;
   onExit: () => void;
-}> = ({ prompts, userNick, onRegister, getCachedScore, onExit }) => {
+  onShowAuth: () => void;
+}> = ({ prompts, userNick, user, onRegister, getCachedScore, onExit, onShowAuth }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [response, setResponse] = useState('');
   const [result, setResult] = useState<{ score: number, comment: string } | null>(null);
@@ -466,13 +538,11 @@ const DailyMode: React.FC<{
     setIsLoading(false);
   };
 
-  const handleSaveScore = async (nick: string) => {
-    if (!nick.trim() || !result) return;
+  const handleSaveScore = async () => {
+    if (!result || !user) return;
     setIsLoading(true);
-    await submitGameScore(nick, result.score, currentPrompt, response);
-    onRegister(nick);
+    await submitGameScore(userNick, result.score, currentPrompt, response, user.id);
     setHasSubmitted(true);
-    setShowNickInput(false);
     setIsLoading(false);
   };
 
@@ -525,7 +595,13 @@ const DailyMode: React.FC<{
             <button onClick={() => { setResult(null); setResponse(''); setHasSubmitted(false); }} className="retro-button py-3 text-sm opacity-80 uppercase">REINTENTAR</button>
             <button
               disabled={hasSubmitted}
-              onClick={() => setShowNickInput(true)}
+              onClick={() => {
+                if (user) {
+                  handleSaveScore();
+                } else {
+                  onShowAuth();
+                }
+              }}
               className={`retro-button py-3 text-sm uppercase ${hasSubmitted ? 'opacity-30 cursor-not-allowed' : ''}`}
             >
               {hasSubmitted ? 'PUNTUACIÓN GUARDADA' : 'GUARDAR PUNTUACIÓN'}
@@ -533,40 +609,178 @@ const DailyMode: React.FC<{
             <button onClick={handleNext} className="retro-button py-3 text-sm font-bold uppercase">SIGUIENTE</button>
           </div>
 
-          {showNickInput && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-              <div className="flex flex-col w-full max-w-sm gap-6 border-2 border-amber-500 p-8 bg-black shadow-[0_0_50px_rgba(255,188,71,0.2)] animate-drop relative">
-                <h3 className="font-['Bebas_Neue'] text-3xl tracking-[0.2em] text-center uppercase text-amber-500 mb-2">IDENTIFÍCATE</h3>
-
-                <input
-                  autoFocus
-                  type="text"
-                  value={tempNick}
-                  onChange={e => setTempNick(e.target.value)}
-                  placeholder="APODO"
-                  className="retro-input py-3 text-2xl w-full bg-transparent focus:shadow-[0_0_15px_rgba(255,188,71,0.3)] transition-shadow"
-                  onKeyDown={e => e.key === 'Enter' && handleSaveScore(tempNick)}
-                />
-
-                <button
-                  disabled={isLoading || !tempNick.trim()}
-                  onClick={() => handleSaveScore(tempNick)}
-                  className="retro-button py-3 text-xl uppercase w-full mt-2 hover:shadow-[0_0_20px_rgba(255,188,71,0.4)]"
-                >
-                  {isLoading ? 'GUARDANDO...' : 'GUARDAR'}
-                </button>
-
-                <button
-                  onClick={() => setShowNickInput(false)}
-                  className="crt-text text-xs opacity-40 uppercase hover:opacity-100 mt-2 tracking-widest transition-opacity text-center"
-                >
-                  CANCELAR
-                </button>
-              </div>
+          {!user && !hasSubmitted && (
+            <div className="crt-text text-[10px] opacity-40 uppercase tracking-widest text-center mt-2 animate-pulse">
+              <span className="text-amber-500 font-bold cursor-pointer hover:underline" onClick={onShowAuth}>INGRESA O REGÍSTRATE</span> PARA GUARDAR TU PUNTUACIÓN
             </div>
           )}
         </div>
       )}
+    </div>
+  );
+};
+
+const AuthModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const { error: authError } = isSignUp
+      ? await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username }
+        }
+      })
+      : await supabase.auth.signInWithPassword({ email, password });
+
+    if (authError) {
+      setError(authError.message);
+    } else {
+      onClose();
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="w-full max-w-md border-2 border-amber-500 p-8 glass-effect relative shadow-[0_0_50px_rgba(255,188,71,0.2)]">
+        <button onClick={onClose} className="absolute top-4 right-4 crt-text text-xs opacity-40 hover:opacity-100 uppercase">[ CERRAR ]</button>
+
+        <h2 className="font-['Bebas_Neue'] text-4xl tracking-[0.2em] text-amber-500 mb-8 text-center uppercase">
+          {isSignUp ? 'CREAR CUENTA' : 'INICIAR SESIÓN'}
+        </h2>
+
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <button onClick={() => signInWithGoogle()} className="retro-button py-2 text-xs flex items-center justify-center gap-2">
+            GOOGLE
+          </button>
+          <button onClick={() => signInWithFacebook()} className="retro-button py-2 text-xs flex items-center justify-center gap-2">
+            FACEBOOK
+          </button>
+        </div>
+
+        <div className="relative flex items-center gap-4 mb-8 opacity-30">
+          <div className="flex-1 h-[1px] bg-amber-500"></div>
+          <span className="crt-text text-[10px] uppercase">O EMAIL</span>
+          <div className="flex-1 h-[1px] bg-amber-500"></div>
+        </div>
+
+        <form onSubmit={handleAuth} className="space-y-4">
+          {isSignUp && (
+            <input
+              type="text"
+              placeholder="APODO"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              className="retro-input w-full py-3"
+              required
+            />
+          )}
+          <input
+            type="email"
+            placeholder="CORREO ELECTRÓNICO"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="retro-input w-full py-3"
+            required
+          />
+          <input
+            type="password"
+            placeholder="CONTRASEÑA"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="retro-input w-full py-3"
+            required
+          />
+
+          {error && <p className="crt-text text-[10px] text-red-500 uppercase text-center">{error}</p>}
+
+          <button type="submit" disabled={loading} className="retro-button w-full py-4 text-xl uppercase mt-4">
+            {loading ? 'PROCESANDO...' : isSignUp ? 'REGISTRARME' : 'ENTRAR'}
+          </button>
+        </form>
+
+        <p className="mt-8 text-center crt-text text-[10px] opacity-60 uppercase">
+          {isSignUp ? '¿YA TIENES CUENTA?' : '¿NO TIENES CUENTA?'}
+          <button onClick={() => setIsSignUp(!isSignUp)} className="ml-2 text-amber-500 hover:underline">
+            {isSignUp ? 'INICIA SESIÓN' : 'REGÍSTRATE GRATIS'}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// ... Rest of the components (MultiplayerSetup, MultiplayerGame etc.)
+
+const UserHistoryView: React.FC<{ user: User, onBack: () => void }> = ({ user, onBack }) => {
+  const [plays, setPlays] = useState<UserPlay[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getUserPlays(user.id).then(data => {
+      setPlays(data);
+      setLoading(false);
+    });
+  }, [user.id]);
+
+  return (
+    <div className="flex flex-col items-center gap-8 py-6 animate-drop w-full max-h-[85vh]">
+      <div className="text-center space-y-3">
+        <h2 className="font-['Bebas_Neue'] text-5xl tracking-widest uppercase text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.2)]">MIS JUGADAS</h2>
+        <p className="crt-text text-[10px] opacity-30 uppercase tracking-widest mt-2">{plays.length} PARTICIPACIONES TOTALES</p>
+      </div>
+
+      <div className="w-full border-2 border-amber-500/30 bg-black/60 overflow-y-auto overflow-x-hidden max-h-[450px] scrollbar-thin scrollbar-thumb-amber-500">
+        {loading ? (
+          <div className="p-20 text-center crt-text text-amber-500 animate-pulse uppercase">Cargando tu historial...</div>
+        ) : plays.length === 0 ? (
+          <div className="p-20 text-center crt-text text-amber-500/50 uppercase">No has guardado ninguna jugada todavía.</div>
+        ) : (
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 bg-black z-10 border-b-2 border-amber-500/50">
+              <tr className="crt-text text-[10px] md:text-xs opacity-80 text-amber-500 uppercase">
+                <th className="p-4 font-black">FECHA</th>
+                <th className="p-4 font-black">ASOCIACIÓN</th>
+                <th className="p-4 font-black text-right">SCORE</th>
+              </tr>
+            </thead>
+            <tbody>
+              {plays.map((play, i) => (
+                <tr key={i} className="border-b border-amber-500/10 hover:bg-amber-500/5 transition-colors group">
+                  <td className="p-4 font-['Bebas_Neue'] text-sm opacity-40">
+                    {new Date(play.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-3 font-['Courier_Prime'] text-xs">
+                      <span className="bg-amber-500/5 border border-amber-500/20 px-2 py-0.5 opacity-60 uppercase">{play.prompt}</span>
+                      <span className="text-amber-500 font-bold text-lg">→</span>
+                      <span className="bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-white uppercase font-bold italic tracking-wider">
+                        {play.response}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-4 text-right font-bold text-amber-500 text-lg md:text-xl">
+                    {play.score.toFixed(3)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <button onClick={onBack} className="retro-button px-12 py-4 w-full max-w-sm uppercase">VOLVER AL MENÚ</button>
     </div>
   );
 };

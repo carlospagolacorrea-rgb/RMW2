@@ -67,13 +67,40 @@ export const getDailyPrompts = (): string[] => {
   const now = new Date();
   const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000);
   const hourBlock = Math.floor(now.getHours() / 4);
-  const seed = dayOfYear + hourBlock;
+  const baseSeed = dayOfYear + hourBlock;
 
   const pool = WORD_POOL;
 
-  const getWord = (offset: number) => pool[(seed * 17 + offset * 31) % pool.length];
+  // Mulberry32: A fast, high-quality 32-bit PRNG
+  const mulberry32 = (a: number) => {
+    return () => {
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  };
 
-  return [getWord(1), getWord(2), getWord(3)];
+  // Initialize PRNG with the base seed
+  const rand = mulberry32(baseSeed + 0xABCDEF); // Shift slightly to avoid small seed artifacts
+
+  // We want to pick 3 words that don't depend on simple linear offsets
+  const pickWords = (count: number) => {
+    const results: string[] = [];
+    // Skip some initial values to warm up the PRNG
+    for (let i = 0; i < 5; i++) rand();
+
+    while (results.length < count) {
+      const idx = Math.floor(rand() * pool.length);
+      const word = pool[idx];
+      if (!results.includes(word)) {
+        results.push(word);
+      }
+    }
+    return results;
+  };
+
+  return pickWords(3);
 };
 
 export const getNextRotationTime = (): Date => {

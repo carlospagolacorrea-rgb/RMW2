@@ -17,6 +17,22 @@ export interface RankingEntry {
     created_at?: string;
 }
 
+export interface UserProfile {
+    id: string;
+    username: string;
+    updated_at: string;
+}
+
+export interface UserPlay {
+    id: string;
+    user_id: string;
+    prompt: string;
+    response: string;
+    score: number;
+    comment: string;
+    created_at: string;
+}
+
 export const getGlobalRankings = async (): Promise<RankingEntry[]> => {
     const { data, error } = await supabase
         .from('global_ranking')
@@ -47,8 +63,8 @@ export const getDailyRankings = async (): Promise<RankingEntry[]> => {
     return data || [];
 };
 
-export const submitGameScore = async (playerName: string, score: number, prompt: string, response: string) => {
-    // We use the RPC function we created in the database for atomic 'top 10' logic
+export const submitGameScore = async (playerName: string, score: number, prompt: string, response: string, userId?: string) => {
+    // 1. Submit to rankings (Public/Global)
     const { error: globalError } = await supabase.rpc('submit_score', {
         t_name: 'global_ranking',
         p_name: playerName,
@@ -66,7 +82,69 @@ export const submitGameScore = async (playerName: string, score: number, prompt:
     });
 
     if (globalError || dailyError) {
-        console.error('Error submitting scores:', globalError || dailyError);
-        // Fallback to simple insert if RPC fails (though we want the atomic logic)
+        console.error('Error submitting scores to rankings:', globalError || dailyError);
     }
+
+    // 2. If user is logged in, submit to their personal history
+    if (userId) {
+        const { error: playError } = await supabase
+            .from('user_plays')
+            .insert({
+                user_id: userId,
+                prompt,
+                response,
+                score,
+                comment: '' // Will be updated if the comment is available in the context
+            });
+
+        if (playError) {
+            console.error('Error submitting personal play:', playError);
+        }
+    }
+};
+
+export const getUserPlays = async (userId: string): Promise<UserPlay[]> => {
+    const { data, error } = await supabase
+        .from('user_plays')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching user plays:', error);
+        return [];
+    }
+    return data || [];
+};
+
+export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+    if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+    }
+    return data;
+};
+
+export const signInWithGoogle = async () => {
+    return await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: window.location.origin
+        }
+    });
+};
+
+export const signInWithFacebook = async () => {
+    return await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: {
+            redirectTo: window.location.origin
+        }
+    });
 };
