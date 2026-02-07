@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { getUserStats, UserPlay } from './services/supabaseClient';
+import { AdBanner } from './AdBanner';
 
 export const UserProfile: React.FC<{ user: User, onBack: () => void, onLogout: () => void }> = ({ user, onBack, onLogout }) => {
     const [stats, setStats] = useState<{ total: number, recent: UserPlay[], totalScore: number, rank: string, streak: number } | null>(null);
@@ -81,6 +82,9 @@ export const UserProfile: React.FC<{ user: User, onBack: () => void, onLogout: (
                             </div>
                         </div>
                     </div>
+
+                    {/* AdSense Banner */}
+                    <AdBanner slot="1234567892" format="horizontal" />
 
                     {/* Recent History Table */}
                     <div className="w-full border-2 border-amber-500/30 bg-black/60 overflow-hidden flex flex-col">

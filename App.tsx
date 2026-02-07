@@ -20,6 +20,7 @@ import {
 import { User } from '@supabase/supabase-js';
 import { PrivacyPolicy, TermsOfService } from './LegalPages';
 import { UserProfile } from './UserProfile';
+import { AdBanner } from './AdBanner';
 
 // --- Retro UI Components ---
 
@@ -235,6 +236,9 @@ export const App: React.FC = () => {
               <button onClick={() => setMode(GameMode.GLOBAL_RANKING)} className="retro-button py-4 px-10 text-lg">Ranking Global</button>
 
             </div>
+
+            {/* AdSense Banner */}
+            <AdBanner slot="1234567890" format="horizontal" />
           </div>
         )}
 
@@ -881,7 +885,10 @@ const RankingView: React.FC<{ title: string; fetchFn: () => Promise<RankingEntry
         )}
       </div>
 
-      <button onClick={onBack} className="retro-button px-12 py-4 w-full max-w-sm uppercase">VOLVER AL MENÚ</button>
+      {/* AdSense Banner */}
+      <AdBanner slot="1234567891" format="rectangle" />
+
+      <button onClick={onBack} className="retro-button px-8 py-4 w-full max-w-xs uppercase">VOLVER</button>
     </div>
   );
 };
