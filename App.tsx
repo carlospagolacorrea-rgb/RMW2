@@ -360,14 +360,14 @@ export const App: React.FC = () => {
           <span className="crt-text text-[10px] text-amber-500 animate-blink uppercase tracking-widest font-bold mt-2">
             Estado: {loading ? 'Pensando...' : 'Listo'}
           </span>
+        </div>
 
-          {/* Institutional Description */}
-          <div className="mt-8 p-6 border-t border-amber-500/10 max-w-2xl text-center">
-            <p className="crt-text text-[10px] leading-relaxed opacity-40 uppercase tracking-widest leading-loose">
-              RANKMYWORD ES UN LABORATORIO DE LENGUAJE EXPERIMENTAL DESARROLLADO POR <span className="text-amber-500/60 font-bold">ZONA DE DRONES S.L.</span> (MADRID, ESPAÑA).
-              ESTA PLATAFORMA EXPLORA LA SEMÁNTICA HUMANA MEDIANTE EL USO DE INTELIGENCIA ARTIFICIAL GENERATIVA Y APRENDIZAJE PROFUNDO PARA MEDIR LA CREATIVIDAD Y ASOCIACIÓN LÓGICA DE CONCEPTOS.
-            </p>
-          </div>
+        {/* Institutional Description - Expanded */}
+        <div className="mt-8 p-6 border-t border-amber-500/10 w-full text-center">
+          <p className="crt-text text-[10px] leading-relaxed opacity-40 uppercase tracking-widest leading-loose">
+            RANKMYWORD ES UN LABORATORIO DE LENGUAJE EXPERIMENTAL DESARROLLADO POR <span className="text-amber-500/60 font-bold">ZONA DE DRONES S.L.</span> (MADRID, ESPAÑA).
+            ESTA PLATAFORMA EXPLORA LA SEMÁNTICA HUMANA MEDIANTE EL USO DE INTELIGENCIA ARTIFICIAL GENERATIVA Y APRENDIZAJE PROFUNDO PARA MEDIR LA CREATIVIDAD Y ASOCIACIÓN LÓGICA DE CONCEPTOS.
+          </p>
         </div>
         <div className="flex flex-wrap justify-center gap-4 mt-6 opacity-60">
           <button onClick={() => setMode(GameMode.PRIVACY)} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
