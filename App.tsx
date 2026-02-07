@@ -13,7 +13,9 @@ import {
   getUserPlays,
   UserPlay
 } from './services/supabaseClient';
+
 import { User } from '@supabase/supabase-js';
+import { PrivacyPolicy, TermsOfService } from './LegalPages';
 
 // --- Retro UI Components ---
 
@@ -228,6 +230,8 @@ export const App: React.FC = () => {
         {mode === GameMode.DAILY_RANKING && <RankingView title="RANKING DIARIO" fetchFn={getDailyRankings} isDaily={true} onBack={() => setMode(GameMode.HOME)} />}
         {mode === GameMode.GLOBAL_RANKING && <RankingView title="RANKING GLOBAL" fetchFn={getGlobalRankings} isDaily={false} onBack={() => setMode(GameMode.HOME)} />}
         {mode === GameMode.USER_HISTORY && user && <UserHistoryView user={user} onBack={() => setMode(GameMode.HOME)} />}
+        {mode === GameMode.PRIVACY && <PrivacyPolicy onBack={() => setMode(GameMode.HOME)} />}
+        {mode === GameMode.TERMS && <TermsOfService onBack={() => setMode(GameMode.HOME)} />}
 
         {mode === GameMode.MULTIPLAYER_SETUP && (
           <MultiplayerSetup
@@ -314,6 +318,20 @@ export const App: React.FC = () => {
           <span className="crt-text text-[10px] text-amber-500 animate-blink uppercase tracking-widest font-bold mt-2">
             Estado: {loading ? 'Pensando...' : 'Listo'}
           </span>
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-4 mt-6 opacity-60">
+          <button onClick={() => setMode(GameMode.PRIVACY)} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+            Política de Privacidad
+          </button>
+          <span className="text-amber-500 text-[10px]">•</span>
+          <button onClick={() => setMode(GameMode.TERMS)} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+            Términos y Condiciones
+          </button>
+          <span className="text-amber-500 text-[10px]">•</span>
+          <a href="mailto:info@workdaynalytics.com" className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+            Contacto
+          </a>
         </div>
       </footer>
     </div>
