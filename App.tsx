@@ -21,6 +21,7 @@ import { User } from '@supabase/supabase-js';
 import { PrivacyPolicy, TermsOfService, ContactPage } from './LegalPages';
 import { UserProfile } from './UserProfile';
 import { AdBanner } from './AdBanner';
+import { Analytics } from '@vercel/analytics/react';
 
 // --- Retro UI Components ---
 
@@ -413,7 +414,8 @@ export const App: React.FC = () => {
           </div>
         )}
       </footer>
-    </div >
+      <Analytics />
+    </div>
   );
 };
 
