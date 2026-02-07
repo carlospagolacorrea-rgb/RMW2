@@ -11,11 +11,15 @@ import {
   signInWithGoogle,
   signInWithFacebook,
   getUserPlays,
+  saveUserPlay,
+  checkGlobalCache,
+  saveToGlobalCache,
   UserPlay
 } from './services/supabaseClient';
 
 import { User } from '@supabase/supabase-js';
 import { PrivacyPolicy, TermsOfService } from './LegalPages';
+import { UserProfile } from './UserProfile';
 
 // --- Retro UI Components ---
 
@@ -127,9 +131,27 @@ export const App: React.FC = () => {
 
   const getCachedScore = async (prompt: string, response: string) => {
     const key = `${prompt.toLowerCase()}_${response.toLowerCase()}`;
+
+    // 1. Check Local Memory Cache
     if (scoreCache[key]) return scoreCache[key];
+
     setLoading(true);
+
+    // 2. Check Global Database Cache
+    const globalCached = await checkGlobalCache(prompt, response);
+    if (globalCached) {
+      setScoreCache(prev => ({ ...prev, [key]: globalCached }));
+      setLoading(false);
+      return globalCached;
+    }
+
+    // 3. AI Generation (if not found in caches)
     const result = await getWordScore(prompt, response);
+
+    // 4. Save to Global & Local Cache
+    // We don't await this to speed up UI response
+    saveToGlobalCache(prompt, response, result.score, result.comment);
+
     setScoreCache(prev => ({ ...prev, [key]: result }));
     setLoading(false);
     return result;
@@ -210,7 +232,7 @@ export const App: React.FC = () => {
               <button onClick={() => setMode(GameMode.MULTIPLAYER_SETUP)} className="retro-button py-6 px-10">Duelo Local</button>
               <button onClick={() => setMode(GameMode.DAILY_RANKING)} className="retro-button py-4 px-10 text-lg">Ranking Diario</button>
               <button onClick={() => setMode(GameMode.GLOBAL_RANKING)} className="retro-button py-4 px-10 text-lg">Ranking Global</button>
-              {user && <button onClick={() => setMode(GameMode.USER_HISTORY)} className="retro-button py-4 px-10 text-lg col-span-1 md:col-span-2 text-amber-500 border-amber-500/50">Mis Jugadas</button>}
+
             </div>
           </div>
         )}
@@ -229,7 +251,7 @@ export const App: React.FC = () => {
 
         {mode === GameMode.DAILY_RANKING && <RankingView title="RANKING DIARIO" fetchFn={getDailyRankings} isDaily={true} onBack={() => setMode(GameMode.HOME)} />}
         {mode === GameMode.GLOBAL_RANKING && <RankingView title="RANKING GLOBAL" fetchFn={getGlobalRankings} isDaily={false} onBack={() => setMode(GameMode.HOME)} />}
-        {mode === GameMode.USER_HISTORY && user && <UserHistoryView user={user} onBack={() => setMode(GameMode.HOME)} />}
+        {mode === GameMode.USER_HISTORY && user && <UserProfile user={user} onBack={() => setMode(GameMode.HOME)} onLogout={logout} />}
         {mode === GameMode.PRIVACY && <PrivacyPolicy onBack={() => setMode(GameMode.HOME)} />}
         {mode === GameMode.TERMS && <TermsOfService onBack={() => setMode(GameMode.HOME)} />}
 
@@ -290,13 +312,13 @@ export const App: React.FC = () => {
       <footer className="w-full text-center pb-10 flex flex-col items-center gap-4">
         <div className="flex flex-col items-center gap-4 w-full max-w-xs">
           {user ? (
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-2 w-full">
               <span className="crt-text text-xs text-amber-500 uppercase tracking-widest font-bold">SESIÓN INICIADA: {userNick}</span>
               <button
-                onClick={logout}
-                className="crt-text text-[10px] text-amber-500/50 hover:text-amber-500 transition-colors uppercase tracking-[0.3em] border border-amber-500/20 hover:border-amber-500/50 px-6 py-1 rounded bg-amber-500/5"
+                onClick={() => setMode(GameMode.USER_HISTORY)}
+                className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-[0.3em] border border-amber-500/40 hover:border-amber-500 px-6 py-1.5 rounded bg-amber-500/5 w-full max-w-[240px]"
               >
-                [ CERRAR SESIÓN ]
+                [ MI PERFIL ]
               </button>
             </div>
           ) : (
@@ -553,6 +575,11 @@ const DailyMode: React.FC<{
     setIsLoading(true);
     const res = await getCachedScore(currentPrompt, response);
     setResult(res);
+
+    if (user) {
+      saveUserPlay(user.id, currentPrompt, response, res.score, res.comment);
+    }
+
     setIsLoading(false);
   };
 
@@ -741,67 +768,7 @@ const AuthModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
 // ... Rest of the components (MultiplayerSetup, MultiplayerGame etc.)
 
-const UserHistoryView: React.FC<{ user: User, onBack: () => void }> = ({ user, onBack }) => {
-  const [plays, setPlays] = useState<UserPlay[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    getUserPlays(user.id).then(data => {
-      setPlays(data);
-      setLoading(false);
-    });
-  }, [user.id]);
-
-  return (
-    <div className="flex flex-col items-center gap-8 py-6 animate-drop w-full max-h-[85vh]">
-      <div className="text-center space-y-3">
-        <h2 className="font-['Bebas_Neue'] text-5xl tracking-widest uppercase text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.2)]">MIS JUGADAS</h2>
-        <p className="crt-text text-[10px] opacity-30 uppercase tracking-widest mt-2">{plays.length} PARTICIPACIONES TOTALES</p>
-      </div>
-
-      <div className="w-full border-2 border-amber-500/30 bg-black/60 overflow-y-auto overflow-x-hidden max-h-[450px] scrollbar-thin scrollbar-thumb-amber-500">
-        {loading ? (
-          <div className="p-20 text-center crt-text text-amber-500 animate-pulse uppercase">Cargando tu historial...</div>
-        ) : plays.length === 0 ? (
-          <div className="p-20 text-center crt-text text-amber-500/50 uppercase">No has guardado ninguna jugada todavía.</div>
-        ) : (
-          <table className="w-full text-left border-collapse">
-            <thead className="sticky top-0 bg-black z-10 border-b-2 border-amber-500/50">
-              <tr className="crt-text text-[10px] md:text-xs opacity-80 text-amber-500 uppercase">
-                <th className="p-4 font-black">FECHA</th>
-                <th className="p-4 font-black">ASOCIACIÓN</th>
-                <th className="p-4 font-black text-right">SCORE</th>
-              </tr>
-            </thead>
-            <tbody>
-              {plays.map((play, i) => (
-                <tr key={i} className="border-b border-amber-500/10 hover:bg-amber-500/5 transition-colors group">
-                  <td className="p-4 font-['Bebas_Neue'] text-sm opacity-40">
-                    {new Date(play.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-3 font-['Courier_Prime'] text-xs">
-                      <span className="bg-amber-500/5 border border-amber-500/20 px-2 py-0.5 opacity-60 uppercase">{play.prompt}</span>
-                      <span className="text-amber-500 font-bold text-lg">→</span>
-                      <span className="bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-white uppercase font-bold italic tracking-wider">
-                        {play.response}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="p-4 text-right font-bold text-amber-500 text-lg md:text-xl">
-                    {play.score.toFixed(3)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <button onClick={onBack} className="retro-button px-12 py-4 w-full max-w-sm uppercase">VOLVER AL MENÚ</button>
-    </div>
-  );
-};
 
 const RankingView: React.FC<{ title: string; fetchFn: () => Promise<RankingEntry[]>; isDaily?: boolean; onBack: () => void }> = ({ title, fetchFn, isDaily, onBack }) => {
   const [rankings, setRankings] = useState<RankingEntry[]>([]);

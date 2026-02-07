@@ -63,6 +63,22 @@ export const getDailyRankings = async (): Promise<RankingEntry[]> => {
     return data || [];
 };
 
+export const saveUserPlay = async (userId: string, prompt: string, response: string, score: number, comment: string = '') => {
+    const { error: playError } = await supabase
+        .from('user_plays')
+        .insert({
+            user_id: userId,
+            prompt,
+            response,
+            score,
+            comment
+        });
+
+    if (playError) {
+        console.error('Error saving personal play:', playError);
+    }
+};
+
 export const submitGameScore = async (playerName: string, score: number, prompt: string, response: string, userId?: string) => {
     // 1. Submit to rankings (Public/Global)
     const { error: globalError } = await supabase.rpc('submit_score', {
@@ -85,22 +101,7 @@ export const submitGameScore = async (playerName: string, score: number, prompt:
         console.error('Error submitting scores to rankings:', globalError || dailyError);
     }
 
-    // 2. If user is logged in, submit to their personal history
-    if (userId) {
-        const { error: playError } = await supabase
-            .from('user_plays')
-            .insert({
-                user_id: userId,
-                prompt,
-                response,
-                score,
-                comment: '' // Will be updated if the comment is available in the context
-            });
-
-        if (playError) {
-            console.error('Error submitting personal play:', playError);
-        }
-    }
+    // Note: User play history is now handled separately by saveUserPlay
 };
 
 export const getUserPlays = async (userId: string): Promise<UserPlay[]> => {
@@ -117,6 +118,35 @@ export const getUserPlays = async (userId: string): Promise<UserPlay[]> => {
     return data || [];
 };
 
+export const getUserStats = async (userId: string): Promise<{ total: number, recent: UserPlay[] }> => {
+    // 1. Get total count
+    const { count, error: countError } = await supabase
+        .from('user_plays')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+    if (countError) {
+        console.error('Error fetching user stats count:', countError);
+    }
+
+    // 2. Get last 20 plays
+    const { data, error: dataError } = await supabase
+        .from('user_plays')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+    if (dataError) {
+        console.error('Error fetching user stats data:', dataError);
+    }
+
+    return {
+        total: count || 0,
+        recent: data || []
+    };
+};
+
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
     const { data, error } = await supabase
         .from('profiles')
@@ -129,6 +159,45 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
         return null;
     }
     return data;
+};
+
+// --- Global Cache Functions ---
+
+export const checkGlobalCache = async (prompt: string, response: string): Promise<{ score: number, comment: string } | null> => {
+    // Normalize inputs for lookup (assuming case-insensitive logic, but exact match on DB)
+    // Ideally DB should handle CI, but let's be consistent.
+    // The prompt comes from the system (UPPERCASE usually), response from user (any case).
+    // Let's rely on the DB storing them as accepted.
+
+    const { data, error } = await supabase
+        .from('daily_cache')
+        .select('score, comment')
+        .eq('prompt', prompt)
+        .eq('response', response) // The user response might be case sensitive in meaning, but usually not.
+        .single(); // Assuming unique constraint or just taking one
+
+    if (error) {
+        // If row not found, it returns an error with code 'PGRST116' (JSON object empty) or similar.
+        // We just return null to indicate miss.
+        return null;
+    }
+
+    return data;
+};
+
+export const saveToGlobalCache = async (prompt: string, response: string, score: number, comment: string) => {
+    const { error } = await supabase
+        .from('daily_cache')
+        .insert({
+            prompt,
+            response,
+            score,
+            comment
+        });
+
+    if (error) {
+        console.error('Error saving to global cache:', error);
+    }
 };
 
 export const signInWithGoogle = async () => {
