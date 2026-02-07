@@ -148,11 +148,12 @@ export const App: React.FC = () => {
     // 3. AI Generation (if not found in caches)
     const result = await getWordScore(prompt, response);
 
-    // 4. Save to Global & Local Cache
-    // We don't await this to speed up UI response
-    saveToGlobalCache(prompt, response, result.score, result.comment);
+    // 4. Save to Global & Local Cache (only if not an error)
+    if (!result.isError) {
+      saveToGlobalCache(prompt, response, result.score, result.comment);
+      setScoreCache(prev => ({ ...prev, [key]: result }));
+    }
 
-    setScoreCache(prev => ({ ...prev, [key]: result }));
     setLoading(false);
     return result;
   };

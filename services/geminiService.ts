@@ -57,10 +57,14 @@ export const getWordScore = async (prompt: string, responseWord: string) => {
     });
 
     const result = JSON.parse(response.text || "{}");
-    return result;
+    return { ...result, isError: false };
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return { score: 0, comment: "Incluso la IA se ha quedado sin palabras ante semejante... cosa." };
+    return {
+      score: 0,
+      comment: "Incluso la IA se ha quedado sin palabras ante semejante... cosa.",
+      isError: true
+    };
   }
 };
 
