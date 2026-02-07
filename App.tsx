@@ -370,7 +370,7 @@ const Tutorial: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const steps = [
     { title: "SISTEMA INICIADO", text: "BIENVENIDO A RANK MY WORD. UN DESAFÍO DE INGENIO HUMANO CONTRA IA." },
     { title: "EL RETO", text: "CADA 4 HORAS SURGEN 3 PALABRAS. TU OBJETIVO: ENCONTRAR UN TÉRMINO RELACIONADO." },
-    { title: "LA PUNTUACIÓN", text: "LA IA EVALUARÁ TU RESPUESTA. BUSCA EL EQUILIBRIO ENTRE LO OBVIO Y LO ABSURDO PARA LOGRAR 10 PUNTOS." },
+    { title: "LA PUNTUACIÓN", text: "LA IA EVALUARÁ TU RESPUESTA. BUSCA EL EQUILIBRIO PERFECTO ENTRE LO OBVIO Y LO ABSURDO PARA LOGRAR 10 PUNTOS." },
     { title: "EL RANKING", text: "DEMUESTRA QUE ERES EL MEJOR Y DOMINA EL RANKING MUNDIAL." }
   ];
 
@@ -395,6 +395,12 @@ const Tutorial: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
     <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-6 backdrop-blur-sm">
       <div className="max-w-xl w-full border-2 border-amber-500/50 p-8 glass-effect relative overflow-hidden shadow-[0_0_50px_rgba(255,188,71,0.1)]">
+        <button
+          onClick={onClose}
+          className="absolute bottom-4 left-4 crt-text text-xs opacity-40 hover:opacity-100 uppercase transition-opacity"
+        >
+          [ X CERRAR ]
+        </button>
         <div className="absolute top-0 left-0 w-full h-1 bg-amber-500/30 animate-scan"></div>
 
         <div className="space-y-6">
