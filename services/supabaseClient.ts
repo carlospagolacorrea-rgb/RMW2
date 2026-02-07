@@ -118,7 +118,17 @@ export const getUserPlays = async (userId: string): Promise<UserPlay[]> => {
     return data || [];
 };
 
-export const getUserStats = async (userId: string): Promise<{ total: number, recent: UserPlay[] }> => {
+export const getRankFromScore = (totalScore: number): string => {
+    if (totalScore < 50) return 'NPC GENÉRICO';
+    if (totalScore < 200) return 'INITIATE';
+    if (totalScore < 500) return 'DATA RUNNER';
+    if (totalScore < 1000) return 'NET STALKER';
+    if (totalScore < 2000) return 'CODE BREAKER';
+    if (totalScore < 5000) return 'ARCHITECT';
+    return 'SINGULARITY';
+};
+
+export const getUserStats = async (userId: string): Promise<{ total: number, recent: UserPlay[], totalScore: number, rank: string, streak: number }> => {
     // 1. Get total count
     const { count, error: countError } = await supabase
         .from('user_plays')
@@ -141,9 +151,64 @@ export const getUserStats = async (userId: string): Promise<{ total: number, rec
         console.error('Error fetching user stats data:', dataError);
     }
 
+    // 3. Calculate total score from all plays
+    const { data: allPlays, error: scoreError } = await supabase
+        .from('user_plays')
+        .select('score')
+        .eq('user_id', userId);
+
+    if (scoreError) {
+        console.error('Error fetching user scores:', scoreError);
+    }
+
+    const totalScore = allPlays?.reduce((sum, play) => sum + play.score, 0) || 0;
+    const rank = getRankFromScore(totalScore);
+
+    // 4. Calculate streak (consecutive days with at least one play)
+    const { data: allPlaysWithDates, error: datesError } = await supabase
+        .from('user_plays')
+        .select('created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+    if (datesError) {
+        console.error('Error fetching play dates:', datesError);
+    }
+
+    let streak = 0;
+    if (allPlaysWithDates && allPlaysWithDates.length > 0) {
+        // Get unique dates (YYYY-MM-DD format)
+        const uniqueDates = [...new Set(
+            allPlaysWithDates.map(play => new Date(play.created_at).toISOString().split('T')[0])
+        )].sort().reverse(); // Most recent first
+
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+        // Streak must start today or yesterday
+        if (uniqueDates[0] === today || uniqueDates[0] === yesterday) {
+            streak = 1;
+            let expectedDate = new Date(uniqueDates[0]);
+
+            for (let i = 1; i < uniqueDates.length; i++) {
+                expectedDate.setDate(expectedDate.getDate() - 1);
+                const expectedDateStr = expectedDate.toISOString().split('T')[0];
+
+                if (uniqueDates[i] === expectedDateStr) {
+                    streak++;
+                } else {
+                    break; // Streak broken
+                }
+            }
+        }
+    }
+
     return {
         total: count || 0,
-        recent: data || []
+        recent: data || [],
+        totalScore,
+        rank,
+        streak
     };
 };
 

@@ -3,7 +3,7 @@ import { User } from '@supabase/supabase-js';
 import { getUserStats, UserPlay } from './services/supabaseClient';
 
 export const UserProfile: React.FC<{ user: User, onBack: () => void, onLogout: () => void }> = ({ user, onBack, onLogout }) => {
-    const [stats, setStats] = useState<{ total: number, recent: UserPlay[] } | null>(null);
+    const [stats, setStats] = useState<{ total: number, recent: UserPlay[], totalScore: number, rank: string, streak: number } | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -20,6 +20,32 @@ export const UserProfile: React.FC<{ user: User, onBack: () => void, onLogout: (
                 <p className="crt-text text-[10px] opacity-60 uppercase tracking-widest mt-2">
                     ESTADÍSTICAS DEL AGENTE: {user.user_metadata.username || 'DESCONOCIDO'}
                 </p>
+                {stats && (
+                    <>
+                        <div className="flex flex-col items-center gap-1 mt-4">
+                            <span className="font-['Bebas_Neue'] text-2xl md:text-3xl tracking-wider text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
+                                {stats.rank}
+                            </span>
+                            <span className="crt-text text-[9px] opacity-40 uppercase tracking-widest">
+                                RANGO ACTUAL
+                            </span>
+                        </div>
+
+                        {stats.streak > 0 && (
+                            <div className="flex items-center gap-2 mt-3 px-4 py-2 border border-amber-500/30 bg-amber-500/5">
+                                <span className="text-2xl">🔥</span>
+                                <div className="flex flex-col">
+                                    <span className="font-['Bebas_Neue'] text-xl text-amber-500">
+                                        {stats.streak} {stats.streak === 1 ? 'DÍA' : 'DÍAS'}
+                                    </span>
+                                    <span className="crt-text text-[8px] opacity-50 uppercase tracking-wider">
+                                        RACHA ACTIVA
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
 
             {loading ? (
@@ -33,12 +59,27 @@ export const UserProfile: React.FC<{ user: User, onBack: () => void, onLogout: (
                         <div className="absolute bottom-0 left-0 w-2 h-2 bg-amber-500"></div>
                         <div className="absolute bottom-0 right-0 w-2 h-2 bg-amber-500"></div>
 
-                        <span className="text-6xl md:text-8xl font-black text-amber-500 drop-shadow-[0_0_15px_rgba(255,188,71,0.4)] font-['Bebas_Neue']">
-                            {stats?.total || 0}
-                        </span>
-                        <span className="crt-text text-sm md:text-base tracking-[0.3em] uppercase opacity-80 mt-2">
-                            TOTAL PALABRAS JUGADAS
-                        </span>
+                        <div className="flex flex-col md:flex-row gap-8 md:gap-16 items-center justify-center w-full">
+                            <div className="flex flex-col items-center">
+                                <span className="text-6xl md:text-8xl font-black text-amber-500 drop-shadow-[0_0_15px_rgba(255,188,71,0.4)] font-['Bebas_Neue']">
+                                    {stats?.total || 0}
+                                </span>
+                                <span className="crt-text text-sm md:text-base tracking-[0.3em] uppercase opacity-80 mt-2">
+                                    PALABRAS JUGADAS
+                                </span>
+                            </div>
+
+                            <div className="hidden md:block w-[2px] h-24 bg-amber-500/30"></div>
+
+                            <div className="flex flex-col items-center">
+                                <span className="text-4xl md:text-6xl font-black text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] font-['Bebas_Neue']">
+                                    {stats?.totalScore.toFixed(1) || '0.0'}
+                                </span>
+                                <span className="crt-text text-sm md:text-base tracking-[0.3em] uppercase opacity-80 mt-2">
+                                    PUNTUACIÓN TOTAL
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Recent History Table */}
