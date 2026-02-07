@@ -527,11 +527,11 @@ const useCountdown = () => {
 
 // --- Sub-components ---
 
-const ShareButton: React.FC<{ score: number, word: string, response: string }> = ({ score, word, response }) => {
+const ShareButton: React.FC<{ score: number, word: string, response: string, comment: string }> = ({ score, word, response, comment }) => {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
-    const text = `📟 RANK MY WORD\n\nPalabra: ${word.toUpperCase()}\nRespuesta: ${response.toUpperCase()}\nScore: ${score.toFixed(3)}/10\n\n¿Puedes superarme?`;
+    const text = `📟 RANK MY WORD\n\nPalabra: ${word.toUpperCase()}\nRespuesta: ${response.toUpperCase()}\nScore: ${score.toFixed(3)}/10\n\n🤖 IA: "${comment}"\n\n¿Puedes superarme?`;
     const url = window.location.origin;
 
     if (navigator.share) {
@@ -609,7 +609,7 @@ const ResultDisplay: React.FC<{
           "{comment}"
         </p>
         <div className="flex justify-center md:justify-start">
-          <ShareButton score={score} word={prompt} response={userWord} />
+          <ShareButton score={score} word={prompt} response={userWord} comment={comment} />
         </div>
       </div>
     </div>
