@@ -113,3 +113,53 @@ export const TermsOfService: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         </p>
     </LegalLayout>
 );
+
+export const ContactPage: React.FC<{ onBack: () => void }> = ({ onBack }) => (
+    <LegalLayout title="CONTACTO" onBack={onBack}>
+        <div className="space-y-8">
+            <div className="border border-amber-500/20 p-6 bg-amber-500/5">
+                <h3 className="text-xl font-bold mb-4 uppercase text-amber-500">¿CÓMO PODEMOS AYUDARTE?</h3>
+                <p className="mb-4">
+                    Para cualquier consulta técnica, duda sobre el funcionamiento del juego, reportar errores o ejercer sus derechos de privacidad, puede ponerse en contacto con nuestro equipo de soporte.
+                </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+                <div className="border border-amber-500/20 p-6">
+                    <h4 className="font-bold text-amber-500 uppercase mb-2">EMAIL PRINCIPAL</h4>
+                    <p className="text-lg font-bold">info@workdaynalytics.com</p>
+                    <p className="text-xs opacity-50 mt-2 uppercase">Respuesta en menos de 48h hábiles</p>
+                </div>
+                <div className="border border-amber-500/20 p-6">
+                    <h4 className="font-bold text-amber-500 uppercase mb-2">UBICACIÓN SOSIAL</h4>
+                    <p className="text-sm">ZONA DE DRONES S.L.<br />C/ Fermín Caballero 64, Madrid</p>
+                </div>
+            </div>
+
+            <div className="border-t border-amber-500/20 pt-6">
+                <h3 className="text-lg font-bold mb-4 uppercase text-amber-500 opacity-60">FORMULARIO DE CONTACTO</h3>
+                <p className="italic opacity-50 text-xs mb-6">
+                    [ MODULO DE FORMULARIO EN MANTENIMIENTO - POR FAVOR USE EL EMAIL PARA MAYOR RAPIDEZ ]
+                </p>
+
+                <div className="space-y-4 opacity-30 pointer-events-none">
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-[10px] uppercase tracking-widest">NOMBRE</label>
+                            <div className="border border-amber-500/40 p-2 h-10"></div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-[10px] uppercase tracking-widest">EMAIL</label>
+                            <div className="border border-amber-500/40 p-2 h-10"></div>
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[10px] uppercase tracking-widest">MENSAJE</label>
+                        <div className="border border-amber-500/40 p-2 h-24"></div>
+                    </div>
+                    <div className="retro-button py-3 text-center text-sm">ENVIAR MENSAJE</div>
+                </div>
+            </div>
+        </div>
+    </LegalLayout>
+);

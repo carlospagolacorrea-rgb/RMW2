@@ -18,7 +18,7 @@ import {
 } from './services/supabaseClient';
 
 import { User } from '@supabase/supabase-js';
-import { PrivacyPolicy, TermsOfService } from './LegalPages';
+import { PrivacyPolicy, TermsOfService, ContactPage } from './LegalPages';
 import { UserProfile } from './UserProfile';
 import { AdBanner } from './AdBanner';
 
@@ -67,6 +67,20 @@ const WordBoard: React.FC<{ word: string; size?: 'sm' | 'md' | 'lg' }> = ({ word
 
 export const App: React.FC = () => {
   const [mode, setMode] = useState<GameMode>(GameMode.HOME);
+  const [showCookieConsent, setShowCookieConsent] = useState(false);
+
+  useEffect(() => {
+    const consent = localStorage.getItem('cookie-consent');
+    if (!consent) {
+      setShowCookieConsent(true);
+    }
+  }, []);
+
+  const acceptCookies = () => {
+    localStorage.setItem('cookie-consent', 'true');
+    setShowCookieConsent(false);
+  };
+
   const [showTutorial, setShowTutorial] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -259,6 +273,7 @@ export const App: React.FC = () => {
         {mode === GameMode.USER_HISTORY && user && <UserProfile user={user} onBack={() => setMode(GameMode.HOME)} onLogout={logout} />}
         {mode === GameMode.PRIVACY && <PrivacyPolicy onBack={() => setMode(GameMode.HOME)} />}
         {mode === GameMode.TERMS && <TermsOfService onBack={() => setMode(GameMode.HOME)} />}
+        {mode === GameMode.CONTACT && <ContactPage onBack={() => setMode(GameMode.HOME)} />}
 
         {mode === GameMode.MULTIPLAYER_SETUP && (
           <MultiplayerSetup
@@ -345,8 +360,15 @@ export const App: React.FC = () => {
           <span className="crt-text text-[10px] text-amber-500 animate-blink uppercase tracking-widest font-bold mt-2">
             Estado: {loading ? 'Pensando...' : 'Listo'}
           </span>
-        </div>
 
+          {/* Institutional Description */}
+          <div className="mt-8 p-6 border-t border-amber-500/10 max-w-2xl text-center">
+            <p className="crt-text text-[10px] leading-relaxed opacity-40 uppercase tracking-widest leading-loose">
+              RANKMYWORD ES UN LABORATORIO DE LENGUAJE EXPERIMENTAL DESARROLLADO POR <span className="text-amber-500/60 font-bold">ZONA DE DRONES S.L.</span> (MADRID, ESPAÑA).
+              ESTA PLATAFORMA EXPLORA LA SEMÁNTICA HUMANA MEDIANTE EL USO DE INTELIGENCIA ARTIFICIAL GENERATIVA Y APRENDIZAJE PROFUNDO PARA MEDIR LA CREATIVIDAD Y ASOCIACIÓN LÓGICA DE CONCEPTOS.
+            </p>
+          </div>
+        </div>
         <div className="flex flex-wrap justify-center gap-4 mt-6 opacity-60">
           <button onClick={() => setMode(GameMode.PRIVACY)} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
             Política de Privacidad
@@ -356,12 +378,42 @@ export const App: React.FC = () => {
             Términos y Condiciones
           </button>
           <span className="text-amber-500 text-[10px]">•</span>
-          <a href="mailto:info@workdaynalytics.com" className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+          <button onClick={() => setMode(GameMode.CONTACT)} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
             Contacto
+          </button>
+          <span className="text-amber-500 text-[10px]">•</span>
+          <a href="mailto:info@workdaynalytics.com" className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+            Email
           </a>
         </div>
+
+        {/* Cookie Consent Banner */}
+        {showCookieConsent && (
+          <div className="fixed bottom-0 left-0 w-full bg-black/95 border-t border-amber-500/50 p-6 z-[200] backdrop-blur-md animate-slide-up">
+            <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-6 justify-between">
+              <p className="crt-text text-[10px] text-amber-500/80 leading-relaxed uppercase tracking-widest text-center md:text-left">
+                UTILIZAMOS COOKIES PROPIAS Y DE TERCEROS (GOOGLE ADSENSE) PARA MEJORAR TU EXPERIENCIA Y ANALIZAR NUESTRO TRÁFICO.
+                AL CONTINUAR NAVEGANDO, ACEPTAS NUESTRA <button onClick={() => setMode(GameMode.PRIVACY)} className="underline hover:text-white">POLÍTICA DE PRIVACIDAD</button>.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={acceptCookies}
+                  className="crt-text text-[10px] text-amber-500/60 hover:text-white transition-colors uppercase tracking-widest border border-amber-500/20 hover:border-amber-500/50 px-4 py-2 rounded bg-amber-500/5"
+                >
+                  ACEPTAR SOLO ESENCIALES
+                </button>
+                <button
+                  onClick={acceptCookies}
+                  className="retro-button px-8 py-2 text-sm whitespace-nowrap"
+                >
+                  ACEPTAR
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </footer>
-    </div>
+    </div >
   );
 };
 

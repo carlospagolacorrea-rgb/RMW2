@@ -9,7 +9,8 @@ export enum GameMode {
   GLOBAL_RANKING = 'GLOBAL_RANKING',
   USER_HISTORY = 'USER_HISTORY',
   PRIVACY = 'PRIVACY',
-  TERMS = 'TERMS'
+  TERMS = 'TERMS',
+  CONTACT = 'CONTACT'
 }
 
 export interface Player {
