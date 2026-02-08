@@ -78,21 +78,19 @@ export const getWordScore = async (prompt: string, responseWord: string) => {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Proxy Error (${response.status}):`, errorText);
-      throw new Error(`Error del servidor (${response.status})`);
+      const errorJson = await response.json().catch(() => ({}));
+      const errorMsg = errorJson.error || errorJson.details || `Error ${response.status}`;
+      console.error(`Proxy Error (${response.status}):`, errorJson);
+      throw new Error(errorMsg);
     }
 
     return await response.json();
   } catch (error: any) {
     console.error("Gemini Proxy Fetch Error:", error);
-    let msg = "Error de conexión con el evaluador.";
-    if (error.message.includes("404")) msg = "Servidor no encontrado (¿Estás usando vercel dev?)";
-    if (error.message.includes("500")) msg = "Error de configuración en el servidor (API_KEY missing?)";
 
     return {
       score: 0,
-      comment: `SISTEMA: ${msg}`,
+      comment: `SISTEMA: ${error.message}`,
       isError: true
     };
   }

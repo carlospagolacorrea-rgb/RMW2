@@ -40,10 +40,15 @@ export default async function handler(req: any, res: any) {
     console.log("Gemini Proxy: Request received", { hasKey: !!apiKey, prompt, responseWord });
 
     if (!apiKey) {
-        return res.status(500).json({ error: 'API_KEY no configurada en el servidor' });
+        console.error("Gemini Proxy: API_KEY is missing from process.env");
+        return res.status(500).json({
+            error: 'API_KEY no configurada',
+            details: 'Asegúrate de configurar GEMINI_API_KEY en las variables de entorno del hosting.'
+        });
     }
 
     if (!prompt || !responseWord) {
+        console.error("Gemini Proxy: Missing parameters", { prompt, responseWord });
         return res.status(400).json({ error: 'Faltan parámetros (prompt o responseWord)' });
     }
 
@@ -71,11 +76,12 @@ export default async function handler(req: any, res: any) {
         const scoreData = JSON.parse(response.text || "{}");
 
         return res.status(200).json({ ...scoreData, isError: false });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Gemini Proxy Error:", error);
         return res.status(500).json({
             score: 0,
-            comment: "Incluso la IA se ha quedado sin palabras ante semejante... cosa (Error en el servidor).",
+            comment: "SISTEMA: Error en la conexión con la IA. "¿Está bien configurada la API KEY?"",
+            error: error.message || "Unknown error",
             isError: true
         });
     }
