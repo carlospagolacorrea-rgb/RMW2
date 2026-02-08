@@ -36,7 +36,7 @@ Return a JSON object with:
 `;
 
 export const getWordScore = async (prompt: string, responseWord: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
+  const ai = new GoogleGenAI({ apiKey: process.env.VITE_GEMINI_API_KEY || "" });
 
   try {
     const response = await ai.models.generateContent({

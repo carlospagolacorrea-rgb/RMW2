@@ -1002,7 +1002,7 @@ const RankingView: React.FC<{ title: string; fetchFn: () => Promise<RankingEntry
   }, [fetchFn, isDaily]);
 
   return (
-    <div className="flex flex-col items-center gap-8 py-6 animate-drop w-full max-h-[85vh]">
+    <div className="flex flex-col items-center gap-8 py-6 animate-drop w-full">
       <div className="text-center space-y-3">
         <h2 className="font-['Bebas_Neue'] text-5xl tracking-widest uppercase text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.2)]">{title}</h2>
         {isDaily && (
@@ -1064,10 +1064,10 @@ const RankingView: React.FC<{ title: string; fetchFn: () => Promise<RankingEntry
         )}
       </div>
 
-      {/* AdSense Banner */}
-      <AdBanner slot="1234567891" format="rectangle" />
-
       <button onClick={onBack} className="retro-button px-8 py-4 w-full max-w-xs uppercase">VOLVER</button>
+
+      {/* AdSense Banner at the bottom */}
+      <AdBanner slot="1234567891" format="rectangle" />
     </div>
   );
 };
