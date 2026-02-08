@@ -20,6 +20,12 @@ const LegalLayout: React.FC<{ title: string; onBack: () => void; children: React
 
 export const PrivacyPolicy: React.FC<{ onBack: () => void }> = ({ onBack }) => (
     <LegalLayout title="POLÍTICA DE PRIVACIDAD" onBack={onBack}>
+        {/* SEO Introduction */}
+        <div className="mb-8 p-4 border-l-4 border-amber-500 bg-amber-500/5">
+            <p className="text-sm opacity-90 italic">
+                En RankMyWord, la privacidad de nuestros usuarios es una prioridad. Este documento te explica de forma transparente cómo protegemos tus datos mientras disfrutas del mejor juego de palabras con Inteligencia Artificial del mercado.
+            </p>
+        </div>
         <p className="mb-6 opacity-70 italic">Última actualización: {new Date().toLocaleDateString()}</p>
 
         <h3 className="text-xl font-bold mb-4 uppercase text-amber-500">1. RESPONSABLE DEL TRATAMIENTO</h3>
@@ -74,6 +80,12 @@ export const PrivacyPolicy: React.FC<{ onBack: () => void }> = ({ onBack }) => (
 
 export const TermsOfService: React.FC<{ onBack: () => void }> = ({ onBack }) => (
     <LegalLayout title="TÉRMINOS Y CONDICIONES" onBack={onBack}>
+        {/* SEO Introduction */}
+        <div className="mb-8 p-4 border-l-4 border-amber-500 bg-amber-500/5">
+            <p className="text-sm opacity-90 italic">
+                Bienvenido a RankMyWord, el juego de asociación semántica que utiliza Inteligencia Artificial para evaluar tu creatividad lingüística. Al usar nuestra plataforma, aceptas las siguientes condiciones que garantizan una experiencia justa y segura para toda la comunidad de jugadores.
+            </p>
+        </div>
         <p className="mb-6 opacity-70 italic">Última actualización: {new Date().toLocaleDateString()}</p>
 
         <h3 className="text-xl font-bold mb-4 uppercase text-amber-500">1. ACEPTACIÓN DE LOS TÉRMINOS</h3>
@@ -160,6 +172,9 @@ export const ContactPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <h3 className="text-xl font-bold mb-4 uppercase text-amber-500">¿CÓMO PODEMOS AYUDARTE?</h3>
                     <p className="mb-4">
                         Para cualquier consulta técnica, duda sobre el funcionamiento del juego, reportar errores o ejercer sus derechos de privacidad, puede ponerse en contacto con nuestro equipo de soporte.
+                    </p>
+                    <p className="text-xs opacity-70">
+                        RankMyWord es un juego de palabras innovador desarrollado en España que combina creatividad lingüística con Inteligencia Artificial. Nuestro equipo está comprometido a ofrecerte la mejor experiencia de entretenimiento educativo basado en semántica avanzada.
                     </p>
                 </div>
 
@@ -284,26 +299,83 @@ export const MethodologyPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
 export const FAQPage: React.FC<{ onBack: () => void }> = ({ onBack }) => (
     <LegalLayout title="PREGUNTAS FRECUENTES" onBack={onBack}>
+        {/* SEO Introduction */}
+        <div className="mb-8 p-4 border-l-4 border-amber-500 bg-amber-500/5">
+            <p className="text-sm opacity-90 italic">
+                Resuelve tus dudas sobre RankMyWord, el juego de palabras e Inteligencia Artificial que está revolucionando el entretenimiento educativo en español. Aquí encontrarás respuestas a las preguntas más comunes de nuestra comunidad de jugadores.
+            </p>
+        </div>
         <div className="space-y-6 text-left">
             <div>
                 <h4 className="text-amber-500 font-bold uppercase mb-2">¿Qué es RankMyWord?</h4>
-                <p>Es un juego de asociación semántica donde una IA evalúa la relación lógica y creativa entre dos palabras.</p>
+                <p>Es un juego de asociación semántica donde una IA evalúa la relación lógica y creativa entre dos palabras. A diferencia de otros juegos como Wordle o crucigramas, aquí no buscas una palabra exacta, sino la conexión conceptual perfecta que sorprenda a nuestra Inteligencia Artificial.</p>
             </div>
             <div>
                 <h4 className="text-amber-500 font-bold uppercase mb-2">¿Cómo se puntúa?</h4>
-                <p>La IA busca el "punto dulce": ni demasiado obvio ni demasiado extraño. Una conexión inteligente y sorprendente obtiene la mejor nota.</p>
+                <p>La IA busca el "punto dulce": ni demasiado obvio ni demasiado extraño. Una conexión inteligente y sorprendente obtiene la mejor nota. Utilizamos modelos de lenguaje avanzados como Gemini y Claude para analizar la calidad semántica de tu respuesta.</p>
             </div>
             <div>
                 <h4 className="text-amber-500 font-bold uppercase mb-2">¿Cada cuánto hay nuevas palabras?</h4>
-                <p>El reto diario se actualiza automáticamente cada 4 horas con 3 nuevas palabras para que siempre tengas un desafío fresco.</p>
+                <p>El reto diario se actualiza automáticamente cada 4 horas con 3 nuevas palabras para que siempre tengas un desafío fresco. Esto significa que puedes competir múltiples veces al día en el ranking global.</p>
             </div>
             <div>
                 <h4 className="text-amber-500 font-bold uppercase mb-2">¿Es gratuito?</h4>
-                <p>Actualmente RankMyWord es gratuito. No obstante, nos reservamos el derecho de implementar modelos basados en suscripción o funciones premium en el futuro.</p>
+                <p>Actualmente RankMyWord es completamente gratuito. Puedes registrarte, jugar y competir en el ranking mundial sin ningún coste. No obstante, nos reservamos el derecho de implementar modelos basados en suscripción o funciones premium en el futuro.</p>
             </div>
             <div>
                 <h4 className="text-amber-500 font-bold uppercase mb-2">¿Mis datos están seguros?</h4>
-                <p>Solo guardamos tu Nick y puntuaciones para el ranking. No recopilamos información personal sensible sin tu consentimiento.</p>
+                <p>Solo guardamos tu Nick y puntuaciones para el ranking. No recopilamos información personal sensible sin tu consentimiento. Cumplimos con el RGPD europeo y la LOPDGDD española.</p>
+            </div>
+            <div>
+                <h4 className="text-amber-500 font-bold uppercase mb-2">¿Puedo jugar en móvil?</h4>
+                <p>Sí, RankMyWord está diseñado con un diseño responsive que se adapta perfectamente a cualquier dispositivo: móvil, tablet u ordenador de escritorio.</p>
+            </div>
+            <div>
+                <h4 className="text-amber-500 font-bold uppercase mb-2">¿Qué es el modo Duelo Local?</h4>
+                <p>El modo multijugador local te permite competir cara a cara con amigos y familiares en el mismo dispositivo. Cada jugador introduce su respuesta por turnos y la IA evalúa quién ha logrado la mejor asociación semántica.</p>
+            </div>
+        </div>
+    </LegalLayout>
+);
+
+export const AboutUs: React.FC<{ onBack: () => void }> = ({ onBack }) => (
+    <LegalLayout title="QUIÉNES SOMOS" onBack={onBack}>
+        <div className="space-y-8">
+            <div className="border border-amber-500/20 p-6 bg-amber-500/5">
+                <h3 className="text-xl font-bold mb-4 uppercase text-amber-500">NUESTRA HISTORIA</h3>
+                <p className="mb-4">
+                    RankMyWord nació en 2024 como un experimento dentro de <strong>ZONA DE DRONES S.L.</strong>, una empresa tecnológica española con sede en Madrid dedicada a explorar las fronteras del software y la inteligencia artificial.
+                </p>
+                <p className="mb-4">
+                    Lo que comenzó como una curiosidad sobre cómo una IA evaluaría el "ingenio" humano se convirtió en una plataforma completa de juego semántico que hoy disfrutan miles de usuarios.
+                </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+                <div className="border border-amber-500/20 p-6">
+                    <h4 className="font-bold text-amber-500 uppercase mb-2">MISIÓN</h4>
+                    <p className="text-sm opacity-80">Fomentar la agilidad mental y la riqueza del lenguaje a través de la tecnología, creando puentes entre la lógica humana y la artificial.</p>
+                </div>
+                <div className="border border-amber-500/20 p-6">
+                    <h4 className="font-bold text-amber-500 uppercase mb-2">VISIÓN</h4>
+                    <p className="text-sm opacity-80">Convertirnos en el referente de juegos semánticos en español, utilizando la IA no para reemplazarnos, sino para desafiarnos.</p>
+                </div>
+            </div>
+
+            <div className="border border-amber-500/20 p-6 bg-amber-500/5">
+                <h3 className="text-xl font-bold mb-4 uppercase text-amber-500">NUESTRO EQUIPO</h3>
+                <p className="mb-4 text-sm">
+                    Contamos con un equipo multidisciplinar de desarrolladores, lingüistas y expertos en IA en España. Creemos que el código tiene poesía y que la tecnología debe ser, ante todo, divertida y educativa.
+                </p>
+                <div className="flex flex-col gap-2 mt-4">
+                    <p className="text-xs"><strong>Empresa:</strong> ZONA DE DRONES S.L.</p>
+                    <p className="text-xs"><strong>Sede:</strong> Madrid, España</p>
+                    <p className="text-xs"><strong>Especialidad:</strong> Desarrollo de software e IA generativa.</p>
+                </div>
+            </div>
+
+            <div className="text-center opacity-40 italic text-xs mt-8">
+                "El lenguaje es la única frontera que la IA aún intenta cruzar con elegancia. Nosotros le ponemos el mapa."
             </div>
         </div>
     </LegalLayout>

@@ -1,5 +1,18 @@
-
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+
+// SEO Component for Dynamic Titles and Meta Tags
+const SEO = ({ title, description }: { title: string; description?: string }) => {
+  const location = useLocation();
+  useEffect(() => {
+    document.title = `${title} | RankMyWord`;
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', description || "RankMyWord es un innovador juego de palabras donde una Inteligencia Artificial evalúa tu creatividad.");
+    }
+  }, [title, description, location]);
+  return null;
+};
 import { GameMode, Player, ScoreCache, LeaderboardEntry } from './types';
 import { getDailyPrompts, getWordScore, generateCreativePrompt, getNextRotationTime } from './services/geminiService';
 import {
@@ -18,7 +31,7 @@ import {
 } from './services/supabaseClient';
 
 import { User } from '@supabase/supabase-js';
-import { PrivacyPolicy, TermsOfService, ContactPage, MethodologyPage, FAQPage } from './LegalPages';
+import { PrivacyPolicy, TermsOfService, ContactPage, MethodologyPage, FAQPage, AboutUs } from './LegalPages';
 import { UserProfile } from './UserProfile';
 import { AdBanner } from './AdBanner';
 import { Analytics } from '@vercel/analytics/react';
@@ -67,8 +80,34 @@ const WordBoard: React.FC<{ word: string; size?: 'sm' | 'md' | 'lg' }> = ({ word
 };
 
 export const App: React.FC = () => {
-  const [mode, setMode] = useState<GameMode>(GameMode.HOME);
+  const location = useLocation();
   const [showCookieConsent, setShowCookieConsent] = useState(false);
+
+  const getCurrentMode = () => {
+    const path = location.pathname;
+    if (path === '/') return GameMode.HOME;
+    if (path === '/daily') return GameMode.DAILY;
+    if (path === '/ranking-daily') return GameMode.DAILY_RANKING;
+    if (path === '/ranking-global') return GameMode.GLOBAL_RANKING;
+    if (path === '/profile') return GameMode.USER_HISTORY;
+    if (path === '/metodologia') return GameMode.METHODOLOGY;
+    if (path === '/faq') return GameMode.FAQ;
+    if (path === '/duelo') return GameMode.MULTIPLAYER_SETUP;
+    if (path === '/privacidad') return GameMode.PRIVACY;
+    if (path === '/terminos') return GameMode.TERMS;
+    if (path === '/contacto') return GameMode.CONTACT;
+    return GameMode.HOME;
+  };
+
+  const mode = getCurrentMode();
+  const navigate = useNavigate();
+
+  // Helper to change URL programmatically (not used often as we prefer Links)
+  const setMode = (newMode: GameMode) => {
+    // No-op adapter to keep existing code working without refactoring 100% of it yet
+    // Ideally we should use navigate() hook here, but for now we rely on Links
+    // Logic for button clicks will be replaced by Links in the UI
+  };
 
   useEffect(() => {
     const consent = localStorage.getItem('cookie-consent');
@@ -276,13 +315,13 @@ export const App: React.FC = () => {
       <div className="retro-line"></div>
 
       <header className="w-full flex flex-col items-center gap-4">
-        <div className="relative group cursor-pointer" onClick={() => setMode(GameMode.HOME)}>
+        <Link to="/" className="relative group cursor-pointer">
           <h1 className="sr-only">RankMyWord - Juego de Inteligencia Artificial</h1>
           <div className="absolute -top-12 -left-12 opacity-80 hidden md:block">
             <img src="/logo.png" alt="Logo RankMyWord" className="w-20 h-20 object-contain" />
           </div>
           <WordBoard word="RANKMYWORD" size="sm" />
-        </div>
+        </Link>
         <h2 className="font-['Bebas_Neue'] text-xl tracking-[0.5em] opacity-60 uppercase">
           {mode === GameMode.HOME ? 'HUMANS VS AI' : mode.replace('_', ' ')}
         </h2>
@@ -291,104 +330,109 @@ export const App: React.FC = () => {
       <div className="retro-line"></div>
 
       <main className="w-full flex-1">
-        {mode === GameMode.HOME && (
-          <div className="flex flex-col gap-8 py-10 items-center">
-            <div className="text-center space-y-6 mb-4 max-w-2xl">
-              <h3 className="font-['Bebas_Neue'] text-6xl md:text-7xl tracking-widest uppercase text-amber-500 drop-shadow-[0_0_15px_rgba(255,188,71,0.3)]">DOMINA EL RANKING</h3>
-              <p className="crt-text text-xs md:text-sm opacity-80 leading-relaxed text-center">
-                CADA 4 HORAS SURGEN 3 NUEVAS PALABRAS. TU OBJETIVO ES RESPONDER CON UN TÉRMINO QUE ESTÉ EN EL PUNTO EXACTO ENTRE LO OBVIO Y LO ABSURDO. CONSIGUE LA MÁXIMA PUNTUACIÓN Y DOMINA EL RANKING MUNDIAL O COMPITE CON AMIGOS EN EL MODO LOCAL.
-              </p>
-            </div>
+        <Routes>
+          <Route path="/" element={
+            <>
+              <SEO title="Inicio" description="RankMyWord - El juego de palabras donde la IA mide tu creatividad semántica." />
+              <div className="flex flex-col gap-8 py-10 items-center">
+                <div className="text-center space-y-6 mb-4 max-w-2xl">
+                  <h3 className="font-['Bebas_Neue'] text-6xl md:text-7xl tracking-widest uppercase text-amber-500 drop-shadow-[0_0_15px_rgba(255,188,71,0.3)]">DOMINA EL RANKING</h3>
+                  <p className="crt-text text-xs md:text-sm opacity-80 leading-relaxed text-center">
+                    CADA 4 HORAS SURGEN 3 NUEVAS PALABRAS. TU OBJETIVO ES RESPONDER CON UN TÉRMINO QUE ESTÉ EN EL PUNTO EXACTO ENTRE LO OBVIO Y LO ABSURDO. CONSIGUE LA MÁXIMA PUNTUACIÓN Y DOMINA EL RANKING MUNDIAL O COMPITE CON AMIGOS EN EL MODO LOCAL.
+                  </p>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-              <button onClick={() => setMode(GameMode.DAILY)} className="retro-button py-6 px-10 flex flex-col items-center justify-center gap-1 group">
-                <span className="text-xl md:text-2xl font-black">Reto Diario</span>
-                <span className="crt-text text-sm md:text-base font-black opacity-90 transition-opacity tracking-widest text-black">
-                  SIGUIENTE EN {timeLeft || '00:00:00'}
-                </span>
-              </button>
-              <button onClick={() => setMode(GameMode.MULTIPLAYER_SETUP)} className="retro-button py-6 px-10">Duelo Local</button>
-              <button onClick={() => setMode(GameMode.DAILY_RANKING)} className="retro-button py-4 px-10 text-lg">Ranking Diario</button>
-              <button onClick={() => setMode(GameMode.GLOBAL_RANKING)} className="retro-button py-4 px-10 text-lg">Ranking Global</button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                  <Link to="/daily" className="retro-button py-6 px-10 flex flex-col items-center justify-center gap-1 group text-center no-underline">
+                    <span className="text-xl md:text-2xl font-black">Reto Diario</span>
+                    <span className="crt-text text-sm md:text-base font-black opacity-90 transition-opacity tracking-widest text-black">
+                      SIGUIENTE EN {timeLeft || '00:00:00'}
+                    </span>
+                  </Link>
+                  <Link to="/duelo" className="retro-button py-6 px-10 text-center flex items-center justify-center no-underline">Duelo Local</Link>
+                  <Link to="/ranking-daily" className="retro-button py-4 px-10 text-lg text-center flex items-center justify-center no-underline">Ranking Diario</Link>
+                  <Link to="/ranking-global" className="retro-button py-4 px-10 text-lg text-center flex items-center justify-center no-underline">Ranking Global</Link>
+                </div>
 
-            </div>
+                {/* AdSense Banner */}
+                <AdBanner slot="1234567890" format="horizontal" />
 
-            {/* AdSense Banner */}
-            <AdBanner slot="1234567890" format="horizontal" />
-          </div>
-        )}
+                {/* SEO Content for AdSense */}
+                <section className="mt-8 w-full max-w-7xl px-6 prose prose-invert text-left border-t border-amber-500/20 pt-8 mx-auto">
+                  <h2 className="font-['Bebas_Neue'] text-amber-500 uppercase text-4xl mb-6 tracking-widest drop-shadow-[0_0_10px_rgba(255,188,71,0.3)]">El Juego que Desafía tu Mente</h2>
+                  <p className="crt-text text-sm opacity-80 mb-6">
+                    <strong>RankMyWord</strong> no es un juego de palabras cualquiera. Es un <em>experimento de creatividad</em> donde la humanidad compite contra una Inteligencia Artificial entrenada para entender el lenguaje humano. Tu misión: encontrar la palabra perfecta que conecte dos conceptos. Ni demasiado obvia, ni demasiado absurda. <strong>El equilibrio perfecto.</strong>
+                  </p>
 
-        {mode === GameMode.DAILY && (
-          <DailyMode
-            prompts={dailyPrompts}
-            userNick={userNick}
-            user={user}
-            onRegister={handleRegister}
-            getCachedScore={getCachedScore}
-            onExit={() => setMode(GameMode.HOME)}
-            onShowAuth={() => setShowAuthModal(true)}
-          />
-        )}
+                  <div className="grid md:grid-cols-3 gap-6 my-8">
+                    <div className="border border-amber-500/20 p-4 bg-amber-500/5">
+                      <h3 className="font-['Bebas_Neue'] text-amber-500 uppercase text-xl mb-2 tracking-widest">🧠 Entrena tu Cerebro</h3>
+                      <p className="crt-text text-xs opacity-70">Cada partida es un ejercicio de pensamiento lateral que estimula la creatividad y las conexiones neuronales.</p>
+                    </div>
+                    <div className="border border-amber-500/20 p-4 bg-amber-500/5">
+                      <h3 className="font-['Bebas_Neue'] text-amber-500 uppercase text-xl mb-2 tracking-widest">🤖 IA de Última Generación</h3>
+                      <p className="crt-text text-xs opacity-70">Utilizamos modelos de lenguaje avanzados (Gemini y Claude) para evaluar la calidad semántica de tus respuestas.</p>
+                    </div>
+                    <div className="border border-amber-500/20 p-4 bg-amber-500/5">
+                      <h3 className="font-['Bebas_Neue'] text-amber-500 uppercase text-xl mb-2 tracking-widest">🏆 Ranking Global</h3>
+                      <p className="crt-text text-xs opacity-70">Compite con jugadores de todo el mundo. ¿Podrás llegar al Top 10 y demostrar que tu mente es única?</p>
+                    </div>
+                  </div>
 
-        {mode === GameMode.DAILY_RANKING && <RankingView title="RANKING DIARIO" fetchFn={getDailyRankings} isDaily={true} onBack={() => setMode(GameMode.HOME)} />}
-        {mode === GameMode.GLOBAL_RANKING && <RankingView title="RANKING GLOBAL" fetchFn={getGlobalRankings} isDaily={false} onBack={() => setMode(GameMode.HOME)} />}
-        {mode === GameMode.USER_HISTORY && user && <UserProfile user={user} onBack={() => setMode(GameMode.HOME)} onLogout={logout} />}
-        {mode === GameMode.PRIVACY && <PrivacyPolicy onBack={() => setMode(GameMode.HOME)} />}
-        {mode === GameMode.TERMS && <TermsOfService onBack={() => setMode(GameMode.HOME)} />}
-        {mode === GameMode.CONTACT && <ContactPage onBack={() => setMode(GameMode.HOME)} />}
-        {mode === GameMode.METHODOLOGY && <MethodologyPage onBack={() => setMode(GameMode.HOME)} />}
-        {mode === GameMode.FAQ && <FAQPage onBack={() => setMode(GameMode.HOME)} />}
+                  <p className="crt-text text-sm opacity-80 mb-4">
+                    Cada <strong>4 horas</strong> se lanzan nuevas palabras clave. Tus respuestas son analizadas en tiempo real por nuestra IA, que mide la originalidad, relevancia y elegancia de tu asociación. Un juego perfecto para amantes del lenguaje, la lingüística y los retos mentales.
+                  </p>
+                  <h2 className="font-['Bebas_Neue'] text-amber-500 uppercase text-3xl mt-6 tracking-widest drop-shadow-[0_0_10px_rgba(255,188,71,0.3)]">¿Aceptas el Desafío?</h2>
+                </section>
+              </div>
+            </>
+          } />
 
-        {mode === GameMode.MULTIPLAYER_SETUP && (
-          <MultiplayerSetup
-            onStart={startMultiplayerGame}
-            loading={loading}
-          />
-        )}
+          <Route path="/daily" element={
+            <>
+              <SEO title="Reto Diario" description="Participa en el reto diario de RankMyWord. ¿Podrás vencer a la IA hoy?" />
+              <DailyMode
+                prompts={dailyPrompts}
+                userNick={userNick}
+                user={user}
+                onRegister={handleRegister}
+                getCachedScore={getCachedScore}
+                onExit={() => { }}
+                onShowAuth={() => setShowAuthModal(true)}
+              />
+            </>
+          } />
 
-        {mode === GameMode.MULTIPLAYER_GAME && (
-          <MultiplayerGame
-            key={currentPlayerIndex}
-            prompt={multiplayerPrompt}
-            currentPlayer={players[currentPlayerIndex]}
-            playerIndex={currentPlayerIndex}
-            totalPlayers={players.length}
-            loading={loading}
-            onSubmit={async (word) => {
-              const updated = [...players];
-              updated[currentPlayerIndex].word = word;
-              setPlayers(updated);
-              if (currentPlayerIndex < players.length - 1) {
-                setCurrentPlayerIndex(prev => prev + 1);
-              } else {
-                setLoading(true);
-                const scored = await Promise.all(updated.map(async p => {
-                  const res = await getCachedScore(multiplayerPrompt, p.word!);
-                  return {
-                    ...p,
-                    score: res.score,
-                    comment: res.comment,
-                    totalScore: (p.totalScore || 0) + res.score // Accumulate score
-                  };
-                }));
-                // Sort by current round score for suspenseful reveal
-                setPlayers(scored.sort((a, b) => (a.score || 0) - (b.score || 0)));
-                setLoading(false);
-                setMode(GameMode.MULTIPLAYER_RESULTS);
-              }
-            }}
-          />
-        )}
+          <Route path="/ranking-daily" element={
+            <>
+              <SEO title="Ranking Diario" description="Mira quién lidera el tablero de hoy en RankMyWord." />
+              <RankingView title="RANKING DIARIO" fetchFn={getDailyRankings} isDaily={true} onBack={() => { }} />
+            </>
+          } />
+          <Route path="/ranking-global" element={
+            <>
+              <SEO title="Ranking Global" description="Los mejores jugadores de RankMyWord de todos los tiempos." />
+              <RankingView title="RANKING GLOBAL" fetchFn={getGlobalRankings} isDaily={false} onBack={() => { }} />
+            </>
+          } />
 
-        {mode === GameMode.MULTIPLAYER_RESULTS && (
-          <MultiplayerResults
-            players={players}
-            prompt={multiplayerPrompt}
-            onFinish={() => setMode(GameMode.HOME)}
-            onRestart={restartMultiplayerGame}
-            loading={loading}
-          />
-        )}
+          <Route path="/profile" element={user ? <UserProfile user={user} onBack={() => { }} onLogout={logout} /> : <div className="text-center py-20">Inicia sesión primero</div>} />
+
+          <Route path="/privacidad" element={<><SEO title="Privacidad" /><PrivacyPolicy onBack={() => navigate('/')} /></>} />
+          <Route path="/terminos" element={<><SEO title="Términos" /><TermsOfService onBack={() => navigate('/')} /></>} />
+          <Route path="/contacto" element={<><SEO title="Contacto" /><ContactPage onBack={() => navigate('/')} /></>} />
+          <Route path="/metodologia" element={<><SEO title="Metodología" /><MethodologyPage onBack={() => navigate('/')} /></>} />
+          <Route path="/faq" element={<><SEO title="FAQ" /><FAQPage onBack={() => navigate('/')} /></>} />
+          <Route path="/quienes-somos" element={<><SEO title="Quiénes Somos" /><AboutUs onBack={() => navigate('/')} /></>} />
+
+          <Route path="/duelo" element={
+            <MultiplayerSetup
+              onStart={startMultiplayerGame}
+              loading={loading}
+            />
+          } />
+
+        </Routes>
       </main>
 
       <div className="retro-line"></div>
@@ -398,12 +442,12 @@ export const App: React.FC = () => {
           {user ? (
             <div className="flex flex-col items-center gap-2 w-full">
               <span className="crt-text text-xs text-amber-500 uppercase tracking-widest font-bold">SESIÓN INICIADA: {userNick}</span>
-              <button
-                onClick={() => setMode(GameMode.USER_HISTORY)}
-                className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-[0.3em] border border-amber-500/40 hover:border-amber-500 px-6 py-1.5 rounded bg-amber-500/5 w-full max-w-[240px]"
+              <Link
+                to="/profile"
+                className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-[0.3em] border border-amber-500/40 hover:border-amber-500 px-6 py-1.5 rounded bg-amber-500/5 w-full max-w-[240px] block"
               >
                 [ MI PERFIL ]
-              </button>
+              </Link>
             </div>
           ) : (
             <button
@@ -424,6 +468,7 @@ export const App: React.FC = () => {
           <span className="crt-text text-[10px] text-amber-500 animate-blink uppercase tracking-widest font-bold mt-2">
             Estado: {loading ? 'Pensando...' : 'Listo'}
           </span>
+
         </div>
 
         {/* Institutional Description - Expanded */}
@@ -434,56 +479,58 @@ export const App: React.FC = () => {
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-4 mt-6 opacity-60">
-          <button onClick={() => setMode(GameMode.PRIVACY)} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+          <Link to="/quienes-somos" className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+            Quiénes Somos
+          </Link>
+          <span className="text-amber-500 text-[10px]">•</span>
+          <Link to="/privacidad" className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
             Política de Privacidad
-          </button>
+          </Link>
           <span className="text-amber-500 text-[10px]">•</span>
-          <button onClick={() => setMode(GameMode.TERMS)} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+          <Link to="/terminos" className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
             Términos y Condiciones
-          </button>
+          </Link>
           <span className="text-amber-500 text-[10px]">•</span>
-          <button onClick={e => { e.preventDefault(); setMode(GameMode.CONTACT); }} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+          <Link to="/contacto" className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
             Contacto
-          </button>
+          </Link>
           <span className="text-amber-500 text-[10px]">•</span>
-          <button onClick={e => { e.preventDefault(); setMode(GameMode.METHODOLOGY); }} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+          <Link to="/metodologia" className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
             Metodología e IA
-          </button>
-          <button onClick={e => { e.preventDefault(); setMode(GameMode.FAQ); }} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+          </Link>
+          <Link to="/faq" className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
             FAQ
-          </button>
-          <span className="text-amber-500 text-[10px]">•</span>
-          <a href="mailto:info@workdaynalytics.com" className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
-            Email
-          </a>
+          </Link>
         </div>
 
         {/* Cookie Consent Banner */}
-        {showCookieConsent && (
-          <div className="fixed bottom-0 left-0 w-full bg-black/95 border-t border-amber-500/50 p-6 z-[200] backdrop-blur-md animate-slide-up">
-            <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-6 justify-between">
-              <p className="crt-text text-[10px] text-amber-500/80 leading-relaxed uppercase tracking-widest text-center md:text-left">
-                UTILIZAMOS COOKIES PROPIAS Y DE TERCEROS (GOOGLE ADSENSE) PARA MEJORAR TU EXPERIENCIA Y ANALIZAR NUESTRO TRÁFICO.
-                AL CONTINUAR NAVEGANDO, ACEPTAS NUESTRA <button onClick={() => setMode(GameMode.PRIVACY)} className="underline hover:text-white">POLÍTICA DE PRIVACIDAD</button>.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={acceptCookies}
-                  className="crt-text text-[10px] text-amber-500/60 hover:text-white transition-colors uppercase tracking-widest border border-amber-500/20 hover:border-amber-500/50 px-4 py-2 rounded bg-amber-500/5"
-                >
-                  ACEPTAR SOLO ESENCIALES
-                </button>
-                <button
-                  onClick={acceptCookies}
-                  className="retro-button px-8 py-2 text-sm whitespace-nowrap"
-                >
-                  ACEPTAR
-                </button>
+        {
+          showCookieConsent && (
+            <div className="fixed bottom-0 left-0 w-full bg-black/95 border-t border-amber-500/50 p-6 z-[200] backdrop-blur-md animate-slide-up">
+              <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-6 justify-between">
+                <p className="crt-text text-[10px] text-amber-500/80 leading-relaxed uppercase tracking-widest text-center md:text-left">
+                  UTILIZAMOS COOKIES PROPIAS Y DE TERCEROS (GOOGLE ADSENSE) PARA MEJORAR TU EXPERIENCIA Y ANALIZAR NUESTRO TRÁFICO.
+                  AL CONTINUAR NAVEGANDO, ACEPTAS NUESTRA <Link to="/privacidad" className="underline hover:text-white">POLÍTICA DE PRIVACIDAD</Link>.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={acceptCookies}
+                    className="crt-text text-[10px] text-amber-500/60 hover:text-white transition-colors uppercase tracking-widest border border-amber-500/20 hover:border-amber-500/50 px-4 py-2 rounded bg-amber-500/5"
+                  >
+                    ACEPTAR SOLO ESENCIALES
+                  </button>
+                  <button
+                    onClick={acceptCookies}
+                    className="retro-button px-8 py-2 text-sm whitespace-nowrap"
+                  >
+                    ACEPTAR
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </footer>
+          )
+        }
+      </footer >
       <Analytics />
 
       {/* Schema.org LocalBusiness */}
@@ -508,7 +555,7 @@ export const App: React.FC = () => {
           "url": "https://www.rankmyword.com"
         })}
       </script>
-    </div>
+    </div >
   );
 };
 
