@@ -79,9 +79,12 @@ export const getWordScore = async (prompt: string, responseWord: string) => {
 
     if (!response.ok) {
       const errorJson = await response.json().catch(() => ({}));
-      const errorMsg = errorJson.error || errorJson.details || `Error ${response.status}`;
+      const mainError = errorJson.error || "Error";
+      const subDetails = errorJson.details || errorJson.message || "";
+      const fullMsg = subDetails ? `${mainError}: ${subDetails}` : mainError;
+
       console.error(`Proxy Error (${response.status}):`, errorJson);
-      throw new Error(errorMsg);
+      throw new Error(fullMsg);
     }
 
     return await response.json();
