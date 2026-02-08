@@ -239,7 +239,7 @@ export const checkGlobalCache = async (prompt: string, response: string): Promis
         .select('score, comment')
         .eq('prompt', prompt)
         .eq('response', response) // The user response might be case sensitive in meaning, but usually not.
-        .single(); // Assuming unique constraint or just taking one
+        .maybeSingle(); // Better than single() to avoid 406/404 console errors on miss
 
     if (error) {
         // If row not found, it returns an error with code 'PGRST116' (JSON object empty) or similar.

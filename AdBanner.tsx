@@ -21,14 +21,16 @@ export const AdBanner: React.FC<AdBannerProps> = ({
     }, []);
 
     return (
-        <div className="my-6 flex justify-center" style={style}>
+        <div className="my-8 flex justify-center w-full min-h-[100px] min-w-[250px]" style={style}>
             <ins
                 className="adsbygoogle"
                 style={{
                     display: 'block',
-                    border: '1px solid rgba(245, 158, 11, 0.2)',
-                    background: 'rgba(0, 0, 0, 0.3)',
-                    padding: '1rem'
+                    width: '100%',
+                    minWidth: '250px',
+                    minHeight: '100px',
+                    border: '1px solid rgba(245, 158, 11, 0.1)',
+                    background: 'rgba(0, 0, 0, 0.2)',
                 }}
                 data-ad-client="ca-pub-6270405920172371"
                 data-ad-slot={slot}

@@ -279,13 +279,7 @@ export const App: React.FC = () => {
         <div className="relative group cursor-pointer" onClick={() => setMode(GameMode.HOME)}>
           <h1 className="sr-only">RankMyWord - Juego de Inteligencia Artificial</h1>
           <div className="absolute -top-12 -left-12 opacity-80 hidden md:block">
-            <svg width="80" height="80" viewBox="0 0 100 100" fill="currentColor" role="img" aria-label="Logo RankMyWord - Laboratorio de Lenguaje">
-              <title>Logo RankMyWord</title>
-              <circle cx="50" cy="40" r="20" />
-              <path d="M30 70 Q50 40 70 70" stroke="currentColor" strokeWidth="4" fill="none" />
-              <rect x="35" y="35" width="5" height="5" />
-              <rect x="60" y="35" width="5" height="5" />
-            </svg>
+            <img src="/logo.png" alt="Logo RankMyWord" className="w-20 h-20 object-contain" />
           </div>
           <WordBoard word="RANKMYWORD" size="sm" />
         </div>
