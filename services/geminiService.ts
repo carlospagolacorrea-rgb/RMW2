@@ -36,12 +36,44 @@ Return a JSON object with:
 `;
 
 export const getWordScore = async (prompt: string, responseWord: string) => {
+  // --- MODO HÍBRIDO: Directo en Local, Proxy en Web ---
+  const localKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+  if (isLocal && localKey) {
+    console.log("SISTEMA: Usando conexión directa (Desarrollo)");
+    const ai = new GoogleGenAI({ apiKey: localKey });
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash", // Ajustado a modelo estable
+        contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
+        config: {
+          systemInstruction: SCORING_PROMPT,
+          responseMimeType: "application/json",
+          // @ts-ignore
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              score: { type: Type.NUMBER },
+              comment: { type: Type.STRING }
+            },
+            required: ["score", "comment"]
+          }
+        }
+      });
+      return JSON.parse(response.text || "{}");
+    } catch (err) {
+      console.error("Local GenAI Error:", err);
+      return { score: 0, comment: "Error en conexión directa local.", isError: true };
+    }
+  }
+
+  // --- MODO PRODUCCIÓN: Proxy Seguro ---
+  console.log("SISTEMA: Usando Proxy Seguro (Producción)");
   try {
     const response = await fetch('/api/score', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, responseWord }),
     });
 
@@ -54,15 +86,13 @@ export const getWordScore = async (prompt: string, responseWord: string) => {
     return await response.json();
   } catch (error: any) {
     console.error("Gemini Proxy Fetch Error:", error);
-
-    // Detalle para el usuario
     let msg = "Error de conexión con el evaluador.";
-    if (error.message.includes("404")) msg = "Servidor de evaluación no encontrado (404).";
-    if (error.message.includes("500")) msg = "Error interno del evaluador (500).";
+    if (error.message.includes("404")) msg = "Servidor no encontrado (¿Estás usando vercel dev?)";
+    if (error.message.includes("500")) msg = "Error de configuración en el servidor (API_KEY missing?)";
 
     return {
       score: 0,
-      comment: `SISTEMA: ${msg} Verifica la configuración.`,
+      comment: `SISTEMA: ${msg}`,
       isError: true
     };
   }

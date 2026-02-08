@@ -16,6 +16,9 @@ export default defineConfig(({ mode }) => {
       }
     },
     plugins: [react()],
+    define: mode === 'development' ? {
+      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+    } : {},
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
