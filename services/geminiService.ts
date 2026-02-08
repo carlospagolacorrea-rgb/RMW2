@@ -45,7 +45,7 @@ export const getWordScore = async (prompt: string, responseWord: string) => {
     const ai = new GoogleGenAI({ apiKey: localKey });
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash", // Ajustado a modelo estable
+        model: "gemini-3-flash-preview", // Ajustado a modelo estable
         contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
         config: {
           systemInstruction: SCORING_PROMPT,
@@ -79,12 +79,15 @@ export const getWordScore = async (prompt: string, responseWord: string) => {
 
     if (!response.ok) {
       const errorJson = await response.json().catch(() => ({}));
-      const mainError = errorJson.error || "Error";
-      const subDetails = errorJson.details || errorJson.message || "";
-      const fullMsg = subDetails ? `${mainError}: ${subDetails}` : mainError;
+      let detail = errorJson.details || errorJson.error || "Error desconocido";
+
+      // Si el detalle es un objeto (procedente de Google), extraemos el mensaje
+      if (typeof detail === 'object' && detail !== null) {
+        detail = detail.message || JSON.stringify(detail);
+      }
 
       console.error(`Proxy Error (${response.status}):`, errorJson);
-      throw new Error(fullMsg);
+      throw new Error(detail);
     }
 
     return await response.json();
