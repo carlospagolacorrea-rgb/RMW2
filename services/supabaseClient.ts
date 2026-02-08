@@ -120,12 +120,12 @@ export const getUserPlays = async (userId: string): Promise<UserPlay[]> => {
 
 export const getRankFromScore = (totalScore: number): string => {
     if (totalScore < 50) return 'NPC GENÉRICO';
-    if (totalScore < 200) return 'INITIATE';
-    if (totalScore < 500) return 'DATA RUNNER';
-    if (totalScore < 1000) return 'NET STALKER';
-    if (totalScore < 2000) return 'CODE BREAKER';
-    if (totalScore < 5000) return 'ARCHITECT';
-    return 'SINGULARITY';
+    if (totalScore < 200) return 'BOT IDIOTA';
+    if (totalScore < 500) return 'HUMANO SIN GRACIA';
+    if (totalScore < 1000) return 'PENSAWORD';
+    if (totalScore < 2000) return 'HACKER DE LA SEMÁNTICA';
+    if (totalScore < 5000) return 'ARQUITECTO DEL CONCEPTO';
+    return 'SINGULARIDAD';
 };
 
 export const getUserStats = async (userId: string): Promise<{ total: number, recent: UserPlay[], totalScore: number, rank: string, streak: number }> => {
