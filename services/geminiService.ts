@@ -36,33 +36,25 @@ Return a JSON object with:
 `;
 
 export const getWordScore = async (prompt: string, responseWord: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
-      config: {
-        systemInstruction: SCORING_PROMPT,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            score: { type: Type.NUMBER },
-            comment: { type: Type.STRING }
-          },
-          required: ["score", "comment"]
-        }
-      }
+    const response = await fetch('/api/score', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt, responseWord }),
     });
 
-    const result = JSON.parse(response.text || "{}");
-    return { ...result, isError: false };
+    if (!response.ok) {
+      throw new Error(`Proxy error: ${response.statusText}`);
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("Gemini Proxy Fetch Error:", error);
     return {
       score: 0,
-      comment: "Incluso la IA se ha quedado sin palabras ante semejante... cosa.",
+      comment: "Incluso la IA se ha quedado sin palabras ante semejante... cosa (Error de conexión).",
       isError: true
     };
   }
