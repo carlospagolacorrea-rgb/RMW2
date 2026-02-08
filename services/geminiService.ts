@@ -40,7 +40,7 @@ export const getWordScore = async (prompt: string, responseWord: string) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
       config: {
         systemInstruction: SCORING_PROMPT,
