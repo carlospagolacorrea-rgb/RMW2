@@ -29,60 +29,51 @@ Return a JSON object with:
 `;
 
 export default async function handler(req: any, res: any) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
-    const { prompt, responseWord } = req.body || {};
-
-    // Log para depuración (solo en desarrollo o logs internos)
-    console.log("Gemini Proxy: Request received", { hasKey: !!apiKey, prompt, responseWord });
-
-    if (!apiKey) {
-        console.error("Gemini Proxy: API_KEY is missing from process.env");
-        return res.status(500).json({
-            error: 'API_KEY no configurada',
-            details: 'Asegúrate de configurar GEMINI_API_KEY en las variables de entorno del hosting.'
-        });
-    }
-
-    if (!prompt || !responseWord) {
-        console.error("Gemini Proxy: Missing parameters", { prompt, responseWord });
-        return res.status(400).json({ error: 'Faltan parámetros (prompt o responseWord)' });
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-
+    // 1. Asegurar respuesta JSON pase lo que pase
     try {
-        const response = await ai.models.generateContent({
+        if (req.method !== 'POST') {
+            return res.status(405).json({ error: 'Método no permitido' });
+        }
+
+        const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        const { prompt, responseWord } = req.body || {};
+
+        if (!apiKey) {
+            return res.status(500).json({
+                error: 'Configuración incompleta',
+                details: 'La API_KEY no está configurada en el servidor (Hosting).'
+            });
+        }
+
+        if (!prompt || !responseWord) {
+            return res.status(400).json({ error: 'Faltan parámetros en la petición.' });
+        }
+
+        // 2. Inicialización robusta del SDK
+        const genAI = new GoogleGenAI(apiKey);
+        const model = genAI.getGenerativeModel({
             model: "gemini-1.5-flash",
-            contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
-            config: {
-                systemInstruction: SCORING_PROMPT,
+            systemInstruction: SCORING_PROMPT
+        });
+
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: `Prompt Word: "${prompt}". User Word: "${responseWord}".` }] }],
+            generationConfig: {
                 responseMimeType: "application/json",
-                // @ts-ignore
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        score: { type: Type.NUMBER },
-                        comment: { type: Type.STRING }
-                    },
-                    required: ["score", "comment"]
-                }
             }
         });
 
-        const scoreData = JSON.parse(response.text || "{}");
+        const response = await result.response;
+        const text = response.text();
+        const scoreData = JSON.parse(text || "{}");
 
         return res.status(200).json({ ...scoreData, isError: false });
+
     } catch (error: any) {
-        console.error("Gemini Proxy Error:", error);
+        console.error("CRASH_IN_PROXY:", error);
         return res.status(500).json({
-            score: 0,
-            comment: "SISTEMA: Error en la conexión con la IA. ¿Está bien configurada la API KEY?",
-            error: error.message || "Unknown error",
-            isError: true
+            error: 'Error crítico en el servidor',
+            details: error.message || 'Error desconocido'
         });
     }
 }
