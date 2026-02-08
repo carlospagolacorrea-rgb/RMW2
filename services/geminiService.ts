@@ -78,9 +78,16 @@ export const generateCreativePrompt = async (): Promise<string> => {
 
 export const getDailyPrompts = (): string[] => {
   const now = new Date();
-  const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000);
+  // Calculate day of year (1-366)
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - start.getTime();
+  const oneDay = 1000 * 60 * 60 * 24;
+  const dayOfYear = Math.floor(diff / oneDay);
+
   const hourBlock = Math.floor(now.getHours() / 4);
-  const baseSeed = dayOfYear + hourBlock;
+
+  // Use a formula that doesn't overlap (e.g., day 38 block 5 vs day 39 block 4)
+  const baseSeed = (dayOfYear * 10) + hourBlock;
 
   const pool = WORD_POOL;
 
