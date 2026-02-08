@@ -49,23 +49,19 @@ export default async function handler(req: any, res: any) {
             return res.status(400).json({ error: 'Faltan parámetros en la petición.' });
         }
 
-        // 2. Inicialización robusta del SDK
-        const genAI = new GoogleGenAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
-            systemInstruction: SCORING_PROMPT
-        });
+        // 2. Inicialización según versión del proyecto
+        const ai = new GoogleGenAI({ apiKey });
 
-        const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: `Prompt Word: "${prompt}". User Word: "${responseWord}".` }] }],
-            generationConfig: {
+        const response = await ai.models.generateContent({
+            model: "gemini-1.5-flash",
+            contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
+            config: {
+                systemInstruction: SCORING_PROMPT,
                 responseMimeType: "application/json",
             }
         });
 
-        const response = await result.response;
-        const text = response.text();
-        const scoreData = JSON.parse(text || "{}");
+        const scoreData = JSON.parse(response.text || "{}");
 
         return res.status(200).json({ ...scoreData, isError: false });
 
