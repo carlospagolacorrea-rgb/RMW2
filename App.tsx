@@ -406,17 +406,17 @@ export const App: React.FC = () => {
           <Route path="/ranking-daily" element={
             <>
               <SEO title="Ranking Diario" description="Mira quién lidera el tablero de hoy en RankMyWord." />
-              <RankingView title="RANKING DIARIO" fetchFn={getDailyRankings} isDaily={true} onBack={() => { }} />
+              <RankingView title="RANKING DIARIO" fetchFn={getDailyRankings} isDaily={true} onBack={() => navigate('/')} />
             </>
           } />
           <Route path="/ranking-global" element={
             <>
               <SEO title="Ranking Global" description="Los mejores jugadores de RankMyWord de todos los tiempos." />
-              <RankingView title="RANKING GLOBAL" fetchFn={getGlobalRankings} isDaily={false} onBack={() => { }} />
+              <RankingView title="RANKING GLOBAL" fetchFn={getGlobalRankings} isDaily={false} onBack={() => navigate('/')} />
             </>
           } />
 
-          <Route path="/profile" element={user ? <UserProfile user={user} onBack={() => { }} onLogout={logout} /> : <div className="text-center py-20">Inicia sesión primero</div>} />
+          <Route path="/profile" element={user ? <UserProfile user={user} onBack={() => navigate('/')} onLogout={logout} /> : <div className="text-center py-20">Inicia sesión primero</div>} />
 
           <Route path="/privacidad" element={<><SEO title="Privacidad" /><PrivacyPolicy onBack={() => navigate('/')} /></>} />
           <Route path="/terminos" element={<><SEO title="Términos" /><TermsOfService onBack={() => navigate('/')} /></>} />
