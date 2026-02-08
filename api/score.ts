@@ -80,7 +80,7 @@ export default async function handler(req: any, res: any) {
         console.error("Gemini Proxy Error:", error);
         return res.status(500).json({
             score: 0,
-            comment: "SISTEMA: Error en la conexión con la IA. "¿Está bien configurada la API KEY?"",
+            comment: "SISTEMA: Error en la conexión con la IA. ¿Está bien configurada la API KEY?",
             error: error.message || "Unknown error",
             isError: true
         });
