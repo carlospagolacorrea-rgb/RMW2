@@ -8,17 +8,12 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: '0.0.0.0',
-      proxy: {
-        '/api': {
-          target: 'http://localhost:3000', // Redirect to same server if using Vercel Dev or similar
-          changeOrigin: true,
-        }
-      }
     },
     plugins: [react()],
-    define: mode === 'development' ? {
-      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    } : {},
+    define: {
+      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

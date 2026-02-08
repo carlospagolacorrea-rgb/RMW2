@@ -36,67 +36,33 @@ Return a JSON object with:
 `;
 
 export const getWordScore = async (prompt: string, responseWord: string) => {
-  // --- MODO HÍBRIDO: Directo en Local, Proxy en Web ---
-  const localKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 
-  if (isLocal && localKey) {
-    console.log("SISTEMA: Usando conexión directa (Desarrollo)");
-    const ai = new GoogleGenAI({ apiKey: localKey });
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview", // Ajustado a modelo estable
-        contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
-        config: {
-          systemInstruction: SCORING_PROMPT,
-          responseMimeType: "application/json",
-          // @ts-ignore
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              score: { type: Type.NUMBER },
-              comment: { type: Type.STRING }
-            },
-            required: ["score", "comment"]
-          }
-        }
-      });
-      return JSON.parse(response.text || "{}");
-    } catch (err) {
-      console.error("Local GenAI Error:", err);
-      return { score: 0, comment: "Error en conexión directa local.", isError: true };
-    }
-  }
-
-  // --- MODO PRODUCCIÓN: Proxy Seguro ---
-  console.log("SISTEMA: Usando Proxy Seguro (Producción)");
   try {
-    const response = await fetch('/api/score', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, responseWord }),
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
+      config: {
+        systemInstruction: SCORING_PROMPT,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            score: { type: Type.NUMBER },
+            comment: { type: Type.STRING }
+          },
+          required: ["score", "comment"]
+        }
+      }
     });
 
-    if (!response.ok) {
-      const errorJson = await response.json().catch(() => ({}));
-      let detail = errorJson.details || errorJson.error || "Error desconocido";
-
-      // Si el detalle es un objeto (procedente de Google), extraemos el mensaje
-      if (typeof detail === 'object' && detail !== null) {
-        detail = detail.message || JSON.stringify(detail);
-      }
-
-      console.error(`Proxy Error (${response.status}):`, errorJson);
-      throw new Error(detail);
-    }
-
-    return await response.json();
-  } catch (error: any) {
-    console.error("Gemini Proxy Fetch Error:", error);
-
+    const result = JSON.parse(response.text || "{}");
+    return { ...result, isError: false };
+  } catch (error) {
+    console.error("Gemini API Error:", error);
     return {
       score: 0,
-      comment: `SISTEMA: ${error.message}`,
+      comment: "Incluso la IA se ha quedado sin palabras ante semejante... cosa.",
       isError: true
     };
   }
