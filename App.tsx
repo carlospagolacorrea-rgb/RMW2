@@ -18,7 +18,7 @@ import {
 } from './services/supabaseClient';
 
 import { User } from '@supabase/supabase-js';
-import { PrivacyPolicy, TermsOfService, ContactPage } from './LegalPages';
+import { PrivacyPolicy, TermsOfService, ContactPage, MethodologyPage, FAQPage } from './LegalPages';
 import { UserProfile } from './UserProfile';
 import { AdBanner } from './AdBanner';
 import { Analytics } from '@vercel/analytics/react';
@@ -136,6 +136,71 @@ export const App: React.FC = () => {
   }, [scoreCache]);
 
   useEffect(() => {
+    const titles: Record<string, string> = {
+      [GameMode.HOME]: "Juego de Inteligencia Artificial y Semántica",
+      [GameMode.DAILY]: "Reto Diario | Humans vs AI",
+      [GameMode.DAILY_RANKING]: "Ranking Diario | Los Mejores Humanos",
+      [GameMode.GLOBAL_RANKING]: "Ranking Global | Salón de la Fama",
+      [GameMode.USER_HISTORY]: `Perfil de ${userNick || 'Usuario'}`,
+      [GameMode.PRIVACY]: "Política de Privacidad | Seguridad de Datos",
+      [GameMode.TERMS]: "Términos y Condiciones | Uso del Laboratorio",
+      [GameMode.CONTACT]: "Contacto | Soporte Técnico",
+      [GameMode.METHODOLOGY]: "Metodología e IA | Cómo funciona el Juez",
+      [GameMode.FAQ]: "Preguntas Frecuentes | FAQ",
+      [GameMode.MULTIPLAYER_SETUP]: "Duelo Local | Configuración de Partida"
+    };
+
+    const descriptions: Record<string, string> = {
+      [GameMode.HOME]: "RankMyWord es un innovador juego de palabras donde una IA evalúa tu creatividad.",
+      [GameMode.METHODOLOGY]: "Descubre la ciencia tras RankMyWord: espacio latente, vectores y redes neuronales.",
+      [GameMode.FAQ]: "Dudas comunes sobre puntuación, retos y el futuro de RankMyWord.",
+      [GameMode.DAILY]: "Encuentra la palabra perfecta para el reto de hoy y compite con el mundo."
+    };
+
+    document.title = `RankMyWord | ${titles[mode] || 'Juego de IA'}`;
+
+    // Update meta description
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute("content", descriptions[mode] || descriptions[GameMode.HOME]);
+    }
+
+    // Inject Breadcrumbs Schema
+    const existingSchema = document.getElementById('breadcrumbs-schema');
+    if (existingSchema) existingSchema.remove();
+
+    const script = document.createElement('script');
+    script.id = 'breadcrumbs-schema';
+    script.type = 'application/ld+json';
+
+    const breadcrumbList = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://www.rankmyword.com/"
+        }
+      ]
+    };
+
+    if (mode !== GameMode.HOME) {
+      breadcrumbList.itemListElement.push({
+        "@type": "ListItem",
+        "position": 2,
+        "name": titles[mode],
+        "item": `https://www.rankmyword.com/${mode.toLowerCase()}`
+      });
+    }
+
+    script.text = JSON.stringify(breadcrumbList);
+    document.head.appendChild(script);
+
+  }, [mode, userNick]);
+
+  useEffect(() => {
     setDailyPrompts(getDailyPrompts());
   }, []);
 
@@ -212,8 +277,10 @@ export const App: React.FC = () => {
 
       <header className="w-full flex flex-col items-center gap-4">
         <div className="relative group cursor-pointer" onClick={() => setMode(GameMode.HOME)}>
+          <h1 className="sr-only">RankMyWord - Juego de Inteligencia Artificial</h1>
           <div className="absolute -top-12 -left-12 opacity-80 hidden md:block">
-            <svg width="80" height="80" viewBox="0 0 100 100" fill="currentColor">
+            <svg width="80" height="80" viewBox="0 0 100 100" fill="currentColor" role="img" aria-label="Logo RankMyWord - Laboratorio de Lenguaje">
+              <title>Logo RankMyWord</title>
               <circle cx="50" cy="40" r="20" />
               <path d="M30 70 Q50 40 70 70" stroke="currentColor" strokeWidth="4" fill="none" />
               <rect x="35" y="35" width="5" height="5" />
@@ -275,6 +342,8 @@ export const App: React.FC = () => {
         {mode === GameMode.PRIVACY && <PrivacyPolicy onBack={() => setMode(GameMode.HOME)} />}
         {mode === GameMode.TERMS && <TermsOfService onBack={() => setMode(GameMode.HOME)} />}
         {mode === GameMode.CONTACT && <ContactPage onBack={() => setMode(GameMode.HOME)} />}
+        {mode === GameMode.METHODOLOGY && <MethodologyPage onBack={() => setMode(GameMode.HOME)} />}
+        {mode === GameMode.FAQ && <FAQPage onBack={() => setMode(GameMode.HOME)} />}
 
         {mode === GameMode.MULTIPLAYER_SETUP && (
           <MultiplayerSetup
@@ -379,8 +448,15 @@ export const App: React.FC = () => {
             Términos y Condiciones
           </button>
           <span className="text-amber-500 text-[10px]">•</span>
-          <button onClick={() => setMode(GameMode.CONTACT)} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+          <button onClick={e => { e.preventDefault(); setMode(GameMode.CONTACT); }} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
             Contacto
+          </button>
+          <span className="text-amber-500 text-[10px]">•</span>
+          <button onClick={e => { e.preventDefault(); setMode(GameMode.METHODOLOGY); }} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+            Metodología e IA
+          </button>
+          <button onClick={e => { e.preventDefault(); setMode(GameMode.FAQ); }} className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
+            FAQ
           </button>
           <span className="text-amber-500 text-[10px]">•</span>
           <a href="mailto:info@workdaynalytics.com" className="crt-text text-[10px] text-amber-500 hover:text-white transition-colors uppercase tracking-wider">
@@ -415,6 +491,29 @@ export const App: React.FC = () => {
         )}
       </footer>
       <Analytics />
+
+      {/* Schema.org LocalBusiness */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          "name": "RankMyWord",
+          "legalName": "ZONA DE DRONES S.L.",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "C/ Fermín Caballero 64, Larra I, 16ºC",
+            "addressLocality": "Madrid",
+            "postalCode": "28034",
+            "addressCountry": "ES"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "info@workdaynalytics.com",
+            "contactType": "customer support"
+          },
+          "url": "https://www.rankmyword.com"
+        })}
+      </script>
     </div>
   );
 };

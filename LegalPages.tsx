@@ -247,3 +247,64 @@ export const ContactPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </LegalLayout>
     );
 };
+
+export const MethodologyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => (
+    <LegalLayout title="METODOLOGÍA E IA" onBack={onBack}>
+        <h3 className="text-xl font-bold mb-4 uppercase text-amber-500">EL CORAZÓN DE RANKMYWORD</h3>
+        <p className="mb-6">
+            RankMyWord no es solo un juego de palabras; es un experimento vivo sobre la intersección entre la semántica humana y el razonamiento sintético de la Inteligencia Artificial. En un mundo saturado de algoritmos predictivos, nuestra misión es medir la capacidad de asociación creativa que solo el ser humano posee, utilizando la propia IA como juez imparcial y "sentiente".
+        </p>
+
+        <h3 className="text-xl font-bold mb-4 uppercase text-amber-500">¿CÓMO FUNCIONA NUESTRO "JUEZ"?</h3>
+        <p className="mb-6">
+            Para evaluar cada partida, utilizamos modelos de lenguaje de última generación (LLM) basados en redes neuronales de aprendizaje profundo. A diferencia de un diccionario tradicional que solo verifica si una palabra existe, nuestro sistema analiza el <strong>espacio latente</strong> entre los conceptos.
+        </p>
+        <ul className="list-disc pl-6 mb-6 space-y-2">
+            <li><strong>Análisis Semántico:</strong> La IA descompone ambos términos (la palabra propuesta por el sistema y la respuesta del usuario) en vectores multidimensionales.</li>
+            <li><strong>Cálculo de Proximidad Conceptual:</strong> Se evalúa no solo la cercanía lingüística (sinonimia), sino la relevancia cultural, emocional y lógica.</li>
+            <li><strong>Detección de Creatividad:</strong> Nuestro algoritmo está programado para penalizar lo obvio (ej. Sal - Pimienta) y premiar aquellas asociaciones "periféricas" que, aunque distantes, guardan un hilo conductor poético e inteligente.</li>
+        </ul>
+
+        <h3 className="text-xl font-bold mb-4 uppercase text-amber-500">NUESTRA VISIÓN FILOSÓFICA</h3>
+        <p className="mb-6">
+            RankMyWord nace con la visión de celebrar y explorar la agilidad mental del ser humano. En un entorno digital dominado por respuestas automatizadas, buscamos fomentar un espacio donde el pensamiento crítico y la asociación libre de ideas sean los protagonistas. Queremos demostrar que, a pesar del avance tecnológico, la capacidad humana para crear nexos poéticos y lógicos sigue siendo una frontera insuperable para el código estático.
+        </p>
+
+        <h3 className="text-xl font-bold mb-4 uppercase text-amber-500">TECNOLOGÍA RETRO-FUTURISTA</h3>
+        <p className="mb-6">
+            Utilizamos una arquitectura basada en microservicios, con integración directa con Google Gemini y modelos Claude de Anthropic. Los resultados se procesan en tiempo real, generando una personalidad única para nuestra IA, que reacciona emocionalmente a la calidad de tus asociaciones lingüísticas.
+        </p>
+
+        <h3 className="text-xl font-bold mb-4 uppercase text-amber-500">COMPROMISO CON LA CALIDAD</h3>
+        <p className="mb-6">
+            Este proyecto cumple con los más altos estándares de desarrollo web moderno, optimizando tanto el rendimiento como la relevancia del contenido. RankMyWord es una herramienta educativa y de entretenimiento que promueve la riqueza del léxico español y el pensamiento crítico en el uso de nuevas tecnologías.
+        </p>
+    </LegalLayout>
+);
+
+export const FAQPage: React.FC<{ onBack: () => void }> = ({ onBack }) => (
+    <LegalLayout title="PREGUNTAS FRECUENTES" onBack={onBack}>
+        <div className="space-y-6 text-left">
+            <div>
+                <h4 className="text-amber-500 font-bold uppercase mb-2">¿Qué es RankMyWord?</h4>
+                <p>Es un juego de asociación semántica donde una IA evalúa la relación lógica y creativa entre dos palabras.</p>
+            </div>
+            <div>
+                <h4 className="text-amber-500 font-bold uppercase mb-2">¿Cómo se puntúa?</h4>
+                <p>La IA busca el "punto dulce": ni demasiado obvio ni demasiado extraño. Una conexión inteligente y sorprendente obtiene la mejor nota.</p>
+            </div>
+            <div>
+                <h4 className="text-amber-500 font-bold uppercase mb-2">¿Cada cuánto hay nuevas palabras?</h4>
+                <p>El reto diario se actualiza automáticamente cada 4 horas con 3 nuevas palabras para que siempre tengas un desafío fresco.</p>
+            </div>
+            <div>
+                <h4 className="text-amber-500 font-bold uppercase mb-2">¿Es gratuito?</h4>
+                <p>Actualmente RankMyWord es gratuito. No obstante, nos reservamos el derecho de implementar modelos basados en suscripción o funciones premium en el futuro.</p>
+            </div>
+            <div>
+                <h4 className="text-amber-500 font-bold uppercase mb-2">¿Mis datos están seguros?</h4>
+                <p>Solo guardamos tu Nick y puntuaciones para el ranking. No recopilamos información personal sensible sin tu consentimiento.</p>
+            </div>
+        </div>
+    </LegalLayout>
+);

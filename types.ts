@@ -10,7 +10,9 @@ export enum GameMode {
   USER_HISTORY = 'USER_HISTORY',
   PRIVACY = 'PRIVACY',
   TERMS = 'TERMS',
-  CONTACT = 'CONTACT'
+  CONTACT = 'CONTACT',
+  METHODOLOGY = 'METHODOLOGY',
+  FAQ = 'FAQ'
 }
 
 export interface Player {

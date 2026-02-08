@@ -1,0 +1,32 @@
+{
+    "name": "RankMyWord | Laboratorio de Lenguaje",
+    "short_name": "RankMyWord",
+    "description": "Desafío de asociación semántica evaluado por Inteligencia Artificial.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#1a1614",
+    "theme_color": "#ffbc47",
+    "icons": [
+        {
+            "src": "/logo.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "orientation": "portrait",
+    "categories": [
+        "games",
+        "education"
+    ]
+}
