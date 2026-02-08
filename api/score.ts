@@ -49,20 +49,36 @@ export default async function handler(req: any, res: any) {
             return res.status(400).json({ error: 'Faltan parámetros en la petición.' });
         }
 
-        // 2. Inicialización según versión del proyecto
+        // 2. Intento con gemini-1.5-flash, fallback a gemini-pro si falla
         const ai = new GoogleGenAI({ apiKey });
+        let response;
 
-        const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
-            contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
-            config: {
-                systemInstruction: SCORING_PROMPT,
-                responseMimeType: "application/json",
-            }
-        });
+        try {
+            response = await ai.models.generateContent({
+                model: "gemini-1.5-flash",
+                contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
+                config: {
+                    systemInstruction: SCORING_PROMPT,
+                    responseMimeType: "application/json",
+                }
+            });
+        } catch (flashError: any) {
+            console.warn("Flash model failed, falling back to Pro...", flashError.message);
+            // Re-intento con modelo Pro (más compatible con v1beta)
+            response = await ai.models.generateContent({
+                model: "gemini-pro",
+                contents: `${SCORING_PROMPT}\n\nPrompt Word: "${prompt}". User Word: "${responseWord}".`,
+                config: {
+                    responseMimeType: "application/json",
+                }
+            });
+        }
+
+        if (!response || !response.text) {
+            throw new Error("La IA no devolvió una respuesta válida.");
+        }
 
         const scoreData = JSON.parse(response.text || "{}");
-
         return res.status(200).json({ ...scoreData, isError: false });
 
     } catch (error: any) {
