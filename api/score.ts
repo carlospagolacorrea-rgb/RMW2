@@ -33,13 +33,20 @@ export default async function handler(req: any, res: any) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { prompt, responseWord } = req.body;
+    const { prompt, responseWord } = req.body || {};
 
-    if (!prompt || !responseWord) {
-        return res.status(400).json({ error: 'Missing prompt or responseWord' });
+    // Log para depuración (solo en desarrollo o logs internos)
+    console.log("Gemini Proxy: Request received", { hasKey: !!apiKey, prompt, responseWord });
+
+    if (!apiKey) {
+        return res.status(500).json({ error: 'API_KEY no configurada en el servidor' });
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
+    if (!prompt || !responseWord) {
+        return res.status(400).json({ error: 'Faltan parámetros (prompt o responseWord)' });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
 
     try {
         const response = await ai.models.generateContent({

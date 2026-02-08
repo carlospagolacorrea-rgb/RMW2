@@ -46,15 +46,23 @@ export const getWordScore = async (prompt: string, responseWord: string) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Proxy error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`Proxy Error (${response.status}):`, errorText);
+      throw new Error(`Error del servidor (${response.status})`);
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini Proxy Fetch Error:", error);
+
+    // Detalle para el usuario
+    let msg = "Error de conexión con el evaluador.";
+    if (error.message.includes("404")) msg = "Servidor de evaluación no encontrado (404).";
+    if (error.message.includes("500")) msg = "Error interno del evaluador (500).";
+
     return {
       score: 0,
-      comment: "Incluso la IA se ha quedado sin palabras ante semejante... cosa (Error de conexión).",
+      comment: `SISTEMA: ${msg} Verifica la configuración.`,
       isError: true
     };
   }
