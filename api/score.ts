@@ -46,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  
+
   if (!apiKey) {
     return res.status(500).json({ error: 'Error de servidor: API Key no configurada.' });
   }
@@ -56,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash", // Usamos un nombre de modelo válido para la API
+      model: "gemini-2.5-flash", // Usamos un nombre de modelo válido para la API
       contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
       config: {
         systemInstruction: SCORING_PROMPT,
@@ -75,13 +75,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // El SDK que usas parece devolver el texto directamente o en result.text
     // Según tu código original: JSON.parse(response.text || "{}")
     const result = JSON.parse((response as any).text || "{}");
-    
+
     return res.status(200).json(result);
   } catch (error) {
     console.error("Gemini Serverless Error:", error);
-    return res.status(500).json({ 
-      score: 0, 
-      comment: "La IA del servidor ha tenido un cortocircuito tratando de procesar tu respuesta." 
+    return res.status(500).json({
+      score: 0,
+      comment: "La IA del servidor ha tenido un cortocircuito tratando de procesar tu respuesta."
     });
   }
 }
