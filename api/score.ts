@@ -48,33 +48,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const apiKey = process.env.GEMINI_API_KEY;
   
   if (!apiKey) {
-    console.error("GEMINI_API_KEY no configurada en Vercel");
     return res.status(500).json({ error: 'Error de servidor: API Key no configurada.' });
   }
 
-  const ai = new GoogleGenAI(apiKey);
+  // Usar la sintaxis exacta que funcionaba en geminiService.ts
+  const ai = new GoogleGenAI({ apiKey });
 
   try {
-    const model = ai.getGenerativeModel({
-       model: "gemini-1.5-flash", 
-       generationConfig: {
-         responseMimeType: "application/json",
-         responseSchema: {
-           type: Type.OBJECT,
-           properties: {
-             score: { type: Type.NUMBER },
-             comment: { type: Type.STRING }
-           },
-           required: ["score", "comment"]
-         }
-       },
-       systemInstruction: SCORING_PROMPT,
+    const response = await ai.models.generateContent({
+      model: "gemini-1.5-flash", // Usamos un nombre de modelo válido para la API
+      contents: `Prompt Word: "${prompt}". User Word: "${responseWord}".`,
+      config: {
+        systemInstruction: SCORING_PROMPT,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            score: { type: Type.NUMBER },
+            comment: { type: Type.STRING }
+          },
+          required: ["score", "comment"]
+        }
+      }
     });
 
-    const result = await model.generateContent(`Prompt Word: "${prompt}". User Word: "${responseWord}".`);
-    const text = result.response.text();
+    // El SDK que usas parece devolver el texto directamente o en result.text
+    // Según tu código original: JSON.parse(response.text || "{}")
+    const result = JSON.parse((response as any).text || "{}");
     
-    return res.status(200).json(JSON.parse(text));
+    return res.status(200).json(result);
   } catch (error) {
     console.error("Gemini Serverless Error:", error);
     return res.status(500).json({ 
